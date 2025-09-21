@@ -16,7 +16,8 @@ target_link_libraries(Labs INTERFACE
 
 add_executable(Lab1 lab1.cpp
         lab1.cpp
-        Timer.h)
+        Timer.h
+        Plotter.h)
 target_link_libraries(Lab1 PRIVATE Labs)
 
 
