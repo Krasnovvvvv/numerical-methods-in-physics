@@ -1,6 +1,6 @@
-#include "SLAETask.h"
-#include "RandomSLAEGenerator.h"
-#include "ThomasSolver.h"
+#include "../include/SLAETask.h"
+#include "../include/RandomSLAEGenerator.h"
+#include "../include/ThomasSolver.h"
 #include <vector>
 
 int main() {

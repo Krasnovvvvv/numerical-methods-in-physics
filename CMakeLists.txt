@@ -15,15 +15,15 @@ target_link_libraries(Labs INTERFACE
         Matplot++::matplot)
 
 add_executable(Lab1
-        lab1.cpp
-        Timer.h
-        Plotter.h
-        IDataGenerator.h
-        ISolver.h
-        LabTask.h
-        RandomSLAEGenerator.h
-        ThomasSolver.h
-        SLAETask.h)
+        src/lab1.cpp
+        include/Timer.h
+        include/Plotter.h
+        include/IDataGenerator.h
+        include/ISolver.h
+        include/LabTask.h
+        include/RandomSLAEGenerator.h
+        include/ThomasSolver.h
+        include/SLAETask.h)
 
 target_link_libraries(Lab1 PRIVATE Labs)
 
