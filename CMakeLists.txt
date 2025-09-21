@@ -14,13 +14,15 @@ target_link_libraries(Labs INTERFACE
         Matplot++::cimg
         Matplot++::matplot)
 
-add_executable(Lab1 lab1.cpp
+add_executable(Lab1
         lab1.cpp
         Timer.h
         Plotter.h
         IDataGenerator.h
         ISolver.h
-        LabTask.h)
+        LabTask.h
+        RandomSLAEGenerator.h)
+
 target_link_libraries(Lab1 PRIVATE Labs)
 
 
