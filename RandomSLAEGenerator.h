@@ -37,6 +37,11 @@ class RandomSLAEGenerator : public IDataGenerator {
         return A;
     }
 
+    // Точное решение x = [0, 1, ..., n]
+    Eigen::VectorXd exactSolution(size_t n) const {
+        return Eigen::VectorXd::LinSpaced(n, 0, n-1);
+    }
+
 public:
     Eigen::MatrixXd generateMatrix(size_t n) override {
         int diagHigh = 30;
@@ -60,8 +65,11 @@ public:
         return matrix;
     }
 
+    // Правая часть b = Ax
     Eigen::VectorXd generateVector(size_t n) override {
-        return Eigen::VectorXd::Random(n);
+        auto A = generateMatrix(n);
+        auto x = exactSolution(n);
+        return A * x;
     }
 };
 
