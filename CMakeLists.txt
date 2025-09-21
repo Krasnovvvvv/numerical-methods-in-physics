@@ -19,7 +19,8 @@ add_executable(Lab1 lab1.cpp
         Timer.h
         Plotter.h
         IDataGenerator.h
-        ISolver.h)
+        ISolver.h
+        LabTask.h)
 target_link_libraries(Lab1 PRIVATE Labs)
 
 
