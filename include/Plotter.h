@@ -13,23 +13,12 @@ class Plotter {
 public:
     using ExpectedCurveFunc = std::function<std::vector<double>(const std::vector<double>&)>;
 
-    Plotter(std::optional<ExpectedCurveFunc> expected = std::nullopt)
-            : expected_curve(expected) {}
-
     virtual void plot_curve(const std::vector<double>& x, const std::vector<double>& y,
                             const std::string& label) {
         using namespace matplot;
 
-        if (expected_curve) {
-            auto y_expected = (*expected_curve)(x);
-            auto exp_plot = plot(x, y_expected, "--");
-            exp_plot->color("red");
-            exp_plot->line_width(2);
-            exp_plot->display_name("O(n)");
-        }
-
         auto p = scatter(x, y);
-        p->marker_size(8);
+        p->marker_size(10);
         p->color("blue");
         p->display_name(label);
 
@@ -39,12 +28,10 @@ public:
 
         xlabel("n");
         ylabel("Time, ms");
-        legend();
+        legend()->font_size(10);
         xtickangle(45);
         show();
     }
-private:
-    std::optional<ExpectedCurveFunc> expected_curve;
 };
 
 #endif // NUMERICAL_METHODS_IN_PHYSICS_PLOTTER_H
