@@ -21,7 +21,8 @@ add_executable(Lab1
         IDataGenerator.h
         ISolver.h
         LabTask.h
-        RandomSLAEGenerator.h)
+        RandomSLAEGenerator.h
+        ThomasSolver.h)
 
 target_link_libraries(Lab1 PRIVATE Labs)
 
