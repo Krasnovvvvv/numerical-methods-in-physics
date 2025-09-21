@@ -35,7 +35,6 @@ public:
         for (auto n : sizes) {
             auto* slaeGen = dynamic_cast<RandomSLAEGenerator*>(generator);
             if (!slaeGen) throw std::runtime_error("Generator must be RandomSLAEGenerator!");
-
             auto A = slaeGen->generateMatrix(n);
             auto b = slaeGen->generateVector(n);
 
@@ -50,7 +49,7 @@ public:
             double rel_error = (exact - result.solution).norm() / exact.norm();
             std::cout << "n=" << n << ", Ошибка: " << rel_error << ", Время: " << elapsed << " мс\n";
         }
-        plotter->plot_curve(x_points, y_times, "Метод прогонки");
+        plotter->plot_curve(x_points, y_times, "Прогонка");
     }
 };
 
