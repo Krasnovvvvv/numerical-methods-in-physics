@@ -11,27 +11,47 @@
 
 class Plotter {
 public:
-    using ExpectedCurveFunc = std::function<std::vector<double>(const std::vector<double>&)>;
+    using ExpectedCurveFunc = std::function<std::vector<double>(const std::vector<double> &)>;
 
-    virtual void plot_curve(const std::vector<double>& x, const std::vector<double>& y,
-                            const std::string& label) {
+    void plot(const std::vector<double>& x,
+              const std::vector<double>& y,
+              const std::string& label,
+              std::optional<ExpectedCurveFunc> expected = std::nullopt)
+    {
         using namespace matplot;
 
-        auto p = scatter(x, y);
-        p->marker_size(10);
-        p->color("blue");
-        p->display_name(label);
+        if (expected) {
+            std::vector<double> y_exp = (*expected)(x);
 
-        double min_y = *std::min_element(y.begin(), y.end());
-        double max_y = *std::max_element(y.begin(), y.end());
-        ylim({min_y - 0.1 * std::abs(min_y), max_y + 0.1 * std::abs(max_y)});
+            // Формируем «матрицу» Y (2 строки: экспериментальные и теоретические)
+            std::vector<std::vector<double>> ys = {y, y_exp};
+
+            auto lines = matplot::plot(x, ys);
+
+            lines[0]->marker("o").marker_size(8).color("blue").display_name(label);
+            lines[1]->line_style("--").color("red").display_name("Ожидание");
+
+            double min_y = std::min(*std::min_element(y.begin(), y.end()), *std::min_element(y_exp.begin(), y_exp.end()));
+            double max_y = std::max(*std::max_element(y.begin(), y.end()), *std::max_element(y_exp.begin(), y_exp.end()));
+            ylim({min_y - 0.1 * std::abs(min_y), max_y + 0.1 * std::abs(max_y)});
+        } else {
+            auto p = matplot::plot(x, y);
+            p->marker_size(12).color("blue").display_name(label);
+
+            double min_y = *std::min_element(y.begin(), y.end());
+            double max_y = *std::max_element(y.begin(), y.end());
+            ylim({min_y - 0.1 * std::abs(min_y), max_y + 0.1 * std::abs(max_y)});
+        }
 
         xlabel("n");
         ylabel("Time, ms");
         legend()->font_size(10);
         xtickangle(45);
+        grid(true);
         show();
     }
+
 };
+
 
 #endif // NUMERICAL_METHODS_IN_PHYSICS_PLOTTER_H
