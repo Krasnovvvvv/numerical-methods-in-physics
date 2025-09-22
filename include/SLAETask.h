@@ -32,7 +32,7 @@ public:
             std::cout << "n=" << n << ", Ошибка: " << rel_error << ", Время: " << elapsed << " мс\n";
         }
         if(sizes.size()!=1) {
-            plotter->plot(x_points, y_times, "Прогонка", [&y_times](const std::vector<double> &x) {
+            plotter->plot(x_points, y_times, "Прогонка","n","Time, ms",false, [&y_times](const std::vector<double> &x) {
                 // y — экспериментальные значения, должны быть видимы в данной области
                 double sum_x2 = 0, sum_xy = 0;
                 for (size_t i = 0; i < x.size(); ++i) {

@@ -16,6 +16,9 @@ public:
     void plot(const std::vector<double>& x,
               const std::vector<double>& y,
               const std::string& label,
+              const std::string& x_label,
+              const std::string& y_label,
+              bool logarithmic = false,
               std::optional<ExpectedCurveFunc> expected = std::nullopt)
     {
         using namespace matplot;
@@ -27,6 +30,9 @@ public:
             std::vector<std::vector<double>> ys = {y, y_exp};
 
             auto lines = matplot::plot(x, ys);
+
+            if(logarithmic)
+                lines = matplot::loglog(x,ys);
 
             lines[0]->marker("o").marker_size(8).color("blue").display_name(label);
             lines[1]->line_style("--").color("red").display_name("Ожидание");
@@ -43,8 +49,8 @@ public:
             ylim({min_y - 0.1 * std::abs(min_y), max_y + 0.1 * std::abs(max_y)});
         }
 
-        xlabel("n");
-        ylabel("Time, ms");
+        xlabel(x_label);
+        ylabel(y_label);
         legend()->font_size(10);
         xtickangle(45);
         grid(true);
