@@ -13,7 +13,7 @@ int main() {
     // Эксперимент для графика:
     std::vector<size_t> sizes;
     for (size_t n = 1000; n <= 3000; n += 100) sizes.push_back(n);
-    lab.run_experiment(sizes);
+    lab.run(sizes);
 
     return 0;
 }

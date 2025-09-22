@@ -11,7 +11,7 @@ class LabTask {
 public:
     LabTask(IDataGenerator* g, ISolver* s, Plotter* p)
             : generator(g), solver(s), plotter(p) {}
-    virtual void run(size_t n) = 0;
+    virtual void run(const std::vector<size_t>& sizes) = 0;
     virtual ~LabTask() = default;
 protected:
     IDataGenerator* generator;
