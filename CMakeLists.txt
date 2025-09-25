@@ -23,7 +23,8 @@ add_executable(Lab1
         include/LabTask.h
         include/RandomSLAEGenerator.h
         include/ThomasSolver.h
-        include/SLAETask.h)
+        include/SLAETask.h
+        include/AsymptoticFuncs.h)
 
 target_link_libraries(Lab1 PRIVATE Labs)
 

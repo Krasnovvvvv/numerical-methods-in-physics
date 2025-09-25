@@ -11,7 +11,7 @@
 
 class Plotter {
 public:
-    using ExpectedCurveFunc = std::function<std::vector<double>(const std::vector<double> &)>;
+    using ExpectedCurveFunc = std::function<std::vector<double>(const std::vector<double> &,const std::vector<double> &)>;
 
     void plot(const std::vector<double>& x,
               const std::vector<double>& y,
@@ -24,7 +24,7 @@ public:
         using namespace matplot;
 
         if (expected) {
-            std::vector<double> y_exp = (*expected)(x);
+            std::vector<double> y_exp = (*expected)(x,y);
 
             // Формируем «матрицу» Y (2 строки: экспериментальные и теоретические)
             std::vector<std::vector<double>> ys = {y, y_exp};
@@ -35,7 +35,7 @@ public:
                 lines = matplot::loglog(x,ys);
 
             lines[0]->marker("o").marker_size(8).color("blue").display_name(label);
-            lines[1]->line_style("--").color("red").display_name("Ожидание");
+            lines[1]->line_style("--").color("red").display_name("Expected");
 
             double min_y = std::min(*std::min_element(y.begin(), y.end()), *std::min_element(y_exp.begin(), y_exp.end()));
             double max_y = std::max(*std::max_element(y.begin(), y.end()), *std::max_element(y_exp.begin(), y_exp.end()));
