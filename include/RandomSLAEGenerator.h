@@ -38,26 +38,42 @@ class RandomSLAEGenerator : public IDataGenerator {
     }
 
 public:
-    Eigen::MatrixXd generateMatrix(size_t n) override {
-        int diagHigh = 30;
-        int maxTries = 100;
-        for (int attempt = 0; attempt < maxTries; ++attempt) {
-            Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, 1, 10, diagHigh);
-            if (isDiagonallyDominant(matrix)) {
-                return matrix;
+    Eigen::MatrixXd generateMatrix(size_t n, bool is_tridiagonal = false) override {
+        if(is_tridiagonal) {
+            int diagHigh = 30;
+            int maxTries = 100;
+            for (int attempt = 0; attempt < maxTries; ++attempt) {
+                Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, 1, 10, diagHigh);
+                if (isDiagonallyDominant(matrix)) {
+                    return matrix;
+                }
+                diagHigh += 10; // наращиваем преобладание только при неудаче
             }
-            diagHigh += 10; // наращиваем преобладание только при неудаче
+            // Если не удалось, явно формируем матрицу с преобладанием
+            Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, 1, 10, diagHigh * 2);
+            for (size_t i = 0; i < n; ++i) {
+                double sum = 0.0;
+                if (i > 0) sum += std::abs(matrix(i, i - 1));
+                if (i < n - 1) sum += std::abs(matrix(i, i + 1));
+                // делаем диагональный элемент строго больше суммы соседних
+                matrix(i, i) = sum + 1;
+            }
+            return matrix;
         }
-        // Если не удалось, явно формируем матрицу с преобладанием
-        Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, 1, 10, diagHigh * 2);
-        for (size_t i = 0; i < n; ++i) {
-            double sum = 0.0;
-            if (i > 0)   sum += std::abs(matrix(i, i - 1));
-            if (i < n-1) sum += std::abs(matrix(i, i + 1));
-            // делаем диагональный элемент строго больше суммы соседних
-            matrix(i, i) = sum + 1;
+        else {
+
+            int low = 1, high = 100;
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<> dis(low, high);
+            Eigen::MatrixXd matrix(n, n);
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < n; ++j) {
+                    matrix(i, j) = dis(gen);
+                }
+            }
+            return matrix;
         }
-        return matrix;
     }
 
     // Точное решение x = [0, 1, ..., n-1]

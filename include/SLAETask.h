@@ -18,7 +18,7 @@ public:
             if (!slaeGen)
                 throw std::runtime_error("Generator must be RandomSLAEGenerator!");
 
-            Eigen::MatrixXd A = slaeGen->generateMatrix(n);
+            Eigen::MatrixXd A = slaeGen->generateMatrix(n,true);
             Eigen::VectorXd x_exact = slaeGen->exactSolution(n);
             Eigen::VectorXd b = A * x_exact;
 
