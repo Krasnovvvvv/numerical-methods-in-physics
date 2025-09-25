@@ -17,8 +17,10 @@ public:
             auto* slaeGen = dynamic_cast<RandomSLAEGenerator*>(&generator);
             if (!slaeGen)
                 throw std::runtime_error("Generator must be RandomSLAEGenerator!");
-            auto A = slaeGen->generateMatrix(n);
-            auto b = slaeGen->generateVector(n);
+
+            Eigen::MatrixXd A = slaeGen->generateMatrix(n);
+            Eigen::VectorXd x_exact = slaeGen->exactSolution(n);
+            Eigen::VectorXd b = A * x_exact;
 
             Timer t;
             auto result = solver.solve(A, b);
@@ -26,8 +28,7 @@ public:
             xpoints.push_back(static_cast<double>(n));
             ytimes.push_back(elapsed);
 
-            auto exact = slaeGen->exactSolution(n);
-            double relerror = (exact - result.solution).norm() / exact.norm();
+            double relerror = (x_exact - result.solution).norm() / x_exact.norm();
             std::cout << n << " | " << relerror << " | " << elapsed << "\n";
         }
         if (sizes.size() > 1)

@@ -60,16 +60,13 @@ public:
         return matrix;
     }
 
-    // Точное решение x = [0, 1, ..., n]
+    // Точное решение x = [0, 1, ..., n-1]
     Eigen::VectorXd exactSolution(size_t n) const {
         return Eigen::VectorXd::LinSpaced(n, 0, n-1);
     }
 
-    // Правая часть b = Ax
     Eigen::VectorXd generateVector(size_t n) override {
-        auto A = generateMatrix(n);
-        auto x = exactSolution(n);
-        return A * x;
+        throw std::logic_error("Not used in this context");
     }
 
 };
