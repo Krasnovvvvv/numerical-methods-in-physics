@@ -29,7 +29,8 @@ add_executable(Lab1
         include/JacobiSolver.h
         include/SeidelSolver.h
         include/SORSolver.h
-        include/GradientDescentSolver.h)
+        include/GradientDescentSolver.h
+        include/ConjugateGradientsSolver.h)
 
 target_link_libraries(Lab1 PRIVATE Labs)
 
