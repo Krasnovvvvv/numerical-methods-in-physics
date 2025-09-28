@@ -1,7 +1,7 @@
-#include "../include/SLAE_ExactMethod_Task.h"
-#include "../include/RandomSLAEGenerator.h"
-#include "../include/ThomasSolver.h"
-#include "../include/AsymptoticFuncs.h"
+#include "Labs/Lab1/Tasks/SLAE_ExactMethod_Task.h"
+#include "Labs/Lab1/SLAEGenerators/RandomSLAEGenerator.h"
+#include "Labs/Lab1/SLAESolvers/ThomasSolver.h"
+#include "Helpers/AsymptoticFuncs.h"
 #include <vector>
 
 int main() {

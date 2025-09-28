@@ -17,12 +17,19 @@ target_link_libraries(Labs INTERFACE
 file(GLOB_RECURSE LAB_COMMON_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
 
-function(add_lab_task name)
-    add_executable(${name} src/${name}.cpp ${LAB_COMMON_HEADERS})
-    target_link_libraries(${name} PRIVATE Labs)
+function(add_lab lab_number)
+    file(GLOB TASK_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/src/Labs/Lab${lab_number}/Task*.cpp"
+    )
+    foreach(task_src ${TASK_SOURCES})
+        get_filename_component(task_name ${task_src} NAME_WE)
+        add_executable(${task_name} ${task_src} ${LAB_COMMON_HEADERS})
+        target_include_directories(${task_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+        target_link_libraries(${task_name} PRIVATE Labs)
+    endforeach()
 endfunction()
 
-add_lab_task(Task1)
+add_lab(1)
 
 
 

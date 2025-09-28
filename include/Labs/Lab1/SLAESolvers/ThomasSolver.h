@@ -2,7 +2,7 @@
 #define NUMERICAL_METHODS_IN_PHYSICS_THOMASSOLVER_H
 
 #pragma once
-#include "ISolver.h"
+#include "Base/ISolver.h"
 #include <Eigen/Dense>
 #include <vector>
 

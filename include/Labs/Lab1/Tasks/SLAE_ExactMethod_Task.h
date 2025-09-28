@@ -2,8 +2,9 @@
 #define NUMERICAL_METHODS_IN_PHYSICS_SLAE_EXACTMETHOD_TASK_H
 
 #pragma once
-#include "LabTask.h"
-#include "RandomSLAEGenerator.h"
+#include "Base/LabTask.h"
+#include "Labs/Lab1/SLAEGenerators/RandomSLAEGenerator.h"
+#include "Helpers/Timer.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>

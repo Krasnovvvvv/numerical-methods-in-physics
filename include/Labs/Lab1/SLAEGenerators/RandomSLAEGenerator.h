@@ -2,7 +2,7 @@
 #define NUMERICAL_METHODS_IN_PHYSICS_RANDOMSLAEGENERATOR_H
 
 #pragma once
-#include "IDataGenerator.h"
+#include "Base/IDataGenerator.h"
 #include <random>
 #include <climits>
 
@@ -50,14 +50,14 @@ public:
 
     Eigen::MatrixXd generateMatrix(size_t n, bool is_tridiagonal = false) override {
         if(is_tridiagonal) {
-            int diagHigh = 3*maxValue;
+            int diagHigh = 2*maxValue;
             int maxTries = 100;
             for (int attempt = 0; attempt < maxTries; ++attempt) {
                 Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, minValue, maxValue, diagHigh);
                 if (isDiagonallyDominant(matrix)) {
                     return matrix;
                 }
-                diagHigh += 10; // наращиваем преобладание только при неудаче
+                diagHigh += 10;
             }
             // Если не удалось, явно формируем матрицу с преобладанием
             Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, minValue, maxValue, diagHigh * 2);
@@ -72,10 +72,9 @@ public:
         }
         else {
 
-            int low = 1, high = 100;
             std::random_device rd;
             std::mt19937 gen(rd());
-            std::uniform_real_distribution<> dis(low, high);
+            std::uniform_real_distribution<> dis(minValue, maxValue);
             Eigen::MatrixXd matrix(n, n);
             for (size_t i = 0; i < n; ++i) {
                 for (size_t j = 0; j < n; ++j) {

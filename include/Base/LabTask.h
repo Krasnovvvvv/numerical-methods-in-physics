@@ -6,8 +6,8 @@
 
 #include "IDataGenerator.h"
 #include "ISolver.h"
-#include "Timer.h"
-#include "Plotter.h"
+#include "Helpers/Timer.h"
+#include "Helpers/Plotter.h"
 
 class LabTask {
 public:

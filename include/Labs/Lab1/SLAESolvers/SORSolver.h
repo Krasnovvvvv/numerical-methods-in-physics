@@ -1,12 +1,12 @@
-#ifndef NUMERICAL_METHODS_IN_PHYSICS_SEIDELSOLVER_H
-#define NUMERICAL_METHODS_IN_PHYSICS_SEIDELSOLVER_H
+#ifndef NUMERICAL_METHODS_IN_PHYSICS_SORSOLVER_H
+#define NUMERICAL_METHODS_IN_PHYSICS_SORSOLVER_H
 
 #pragma once
-#include "ISolver.h"
+#include "Base/ISolver.h"
 #include <Eigen/Dense>
 #include <vector>
 
-class SeidelSolver : public ISolver {
+class SORSolver : public ISolver {
 public:
     using ISolver::ISolver;
 
@@ -22,7 +22,8 @@ public:
                 double sum1 = 0.0, sum2 = 0.0;
                 for (size_t j = 0; j < i; ++j) sum1 += A(i, j) * x(j);
                 for (size_t j = i + 1; j < n; ++j) sum2 += A(i, j) * x(j);
-                x(i) = (b(i) - sum1 - sum2) / A(i, i);
+                double x_new = (b(i) - sum1 - sum2) / A(i, i);
+                x(i) = (1 - param.value_or(1.3)) * x(i) + param.value_or(1.3) * x_new;
             }
             rel_res = (A * x - b).norm() / b_norm;
             residuals.emplace_back(k + 1, rel_res);
@@ -33,4 +34,4 @@ public:
     }
 };
 
-#endif //NUMERICAL_METHODS_IN_PHYSICS_SEIDELSOLVER_H
+#endif //NUMERICAL_METHODS_IN_PHYSICS_SORSOLVER_H

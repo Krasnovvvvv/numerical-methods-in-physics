@@ -1,31 +1,24 @@
-#include "../include/SLAE_ExactMethod_Task.h"
-#include "../include/RandomSLAEGenerator.h"
-#include "../include/ThomasSolver.h"
-#include "../include/AsymptoticFuncs.h"
-#include "../include/SORSolver.h"
+#include "Labs/Lab1/SLAEGenerators/RandomSLAEGenerator.h"
+#include "Labs/Lab1/SLAESolvers/SORSolver.h"
+#include "Helpers/Plotter.h"
 #include <vector>
 
 int main() {
+
     Plotter plot;
     RandomSLAEGenerator gen;
-    /*ThomasSolver solver;
-
-    SLAE_ExactMethod_Task lab(gen, solver, plot, SLAE_ExactMethod_Task::ExpectedCurveFunc(linearAsymptotic));
-
-    std::vector<size_t> sizes;
-    for (size_t n = 1000; n <= 4000; n += 100)
-        sizes.push_back(n);
-    lab.run(sizes);*/
-
+    auto* slaeGen = dynamic_cast<RandomSLAEGenerator*>(&gen);
     std::vector<double> omega_values;
     std::vector<double> iteration_counts;
+
     size_t n = 100;
-    size_t min_iters = std::numeric_limits<size_t>::max();
     double omega_opt = 1.0;
-    auto* slaeGen = dynamic_cast<RandomSLAEGenerator*>(&gen);
+    size_t min_iters = std::numeric_limits<size_t>::max();
+
     Eigen::MatrixXd A = slaeGen->generateMatrix(n, true);
     Eigen::VectorXd x_exact = slaeGen->exactSolution(n);
     Eigen::VectorXd b = A * x_exact;
+
     SORSolver solver(1000,1e-8);
 
     for (double omega = 0.01; omega < 2.0; omega += 0.01) {
@@ -43,9 +36,12 @@ int main() {
             omega_opt = omega;
         }
     }
-    plot.plot(omega_values, iteration_counts, "SOR: iterations vs omega", "omega", "iterations", true);
+    plot.plot(omega_values, iteration_counts,
+              "SOR: iterations vs omega",
+              "omega", "iterations", true);
     std::cout<<"Optimal omega is: "<<omega_opt;
 
 
 
 }
+
