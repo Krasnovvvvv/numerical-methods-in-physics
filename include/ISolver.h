@@ -18,11 +18,13 @@ public:
     virtual ~ISolver() = default;
 
     explicit ISolver(std::optional<int> max_iter = std::nullopt,
-            std::optional<double> tol = std::nullopt) : maxIter(max_iter), tolerance(tol) {}
+            std::optional<double> tol = std::nullopt,
+            std::optional<double> prm = std::nullopt) : maxIter(max_iter), tolerance(tol), param(prm) {}
 
 protected:
     std::optional<int> maxIter;
     std::optional<double> tolerance;
+    std::optional<double> param;
 };
 
 #endif //NUMERICAL_METHODS_IN_PHYSICS_ISOLVER_H
