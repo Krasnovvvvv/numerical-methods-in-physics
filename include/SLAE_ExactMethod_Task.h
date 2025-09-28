@@ -1,5 +1,5 @@
-#ifndef NUMERICAL_METHODS_IN_PHYSICS_SLAETASK_H
-#define NUMERICAL_METHODS_IN_PHYSICS_SLAETASK_H
+#ifndef NUMERICAL_METHODS_IN_PHYSICS_SLAE_EXACTMETHOD_TASK_H
+#define NUMERICAL_METHODS_IN_PHYSICS_SLAE_EXACTMETHOD_TASK_H
 
 #pragma once
 #include "LabTask.h"
@@ -7,7 +7,7 @@
 #include <iostream>
 #include <vector>
 
-class SLAETask : public LabTask {
+class SLAE_ExactMethod_Task : public LabTask {
 public:
     using LabTask::LabTask; // Наследуем конструктор, чтобы ExpectedCurveFunc пробрасывался!
 
@@ -36,4 +36,4 @@ public:
     }
 };
 
-#endif //NUMERICAL_METHODS_IN_PHYSICS_SLAETASK_H
+#endif //NUMERICAL_METHODS_IN_PHYSICS_SLAE_EXACTMETHOD_TASK_H

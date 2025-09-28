@@ -1,4 +1,4 @@
-#include "../include/SLAETask.h"
+#include "../include/SLAE_ExactMethod_Task.h"
 #include "../include/RandomSLAEGenerator.h"
 #include "../include/ThomasSolver.h"
 #include "../include/AsymptoticFuncs.h"
@@ -9,7 +9,7 @@ int main() {
     RandomSLAEGenerator gen;
     ThomasSolver solver;
 
-    SLAETask lab(gen, solver, plot, SLAETask::ExpectedCurveFunc(linearAsymptotic));
+    SLAE_ExactMethod_Task lab(gen, solver, plot, SLAE_ExactMethod_Task::ExpectedCurveFunc(linearAsymptotic));
     std::vector<size_t> sizes;
     for (size_t n = 1000; n <= 4000; n += 100)
         sizes.push_back(n);
