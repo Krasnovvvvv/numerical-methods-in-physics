@@ -1,6 +1,7 @@
 #ifndef NUMERICAL_METHODS_IN_PHYSICS_SLAE_ITERMETHOD_TASK_H
 #define NUMERICAL_METHODS_IN_PHYSICS_SLAE_ITERMETHOD_TASK_H
 
+#pragma once
 #include "LabTask.h"
 #include "RandomSLAEGenerator.h"
 #include <vector>
