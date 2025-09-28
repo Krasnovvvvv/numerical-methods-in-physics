@@ -21,10 +21,11 @@ public:
             std::optional<double> tol = std::nullopt,
             std::optional<double> prm = std::nullopt) : maxIter(max_iter), tolerance(tol), param(prm) {}
 
+    std::optional<double> param;
+
 protected:
     std::optional<int> maxIter;
     std::optional<double> tolerance;
-    std::optional<double> param;
 };
 
 #endif //NUMERICAL_METHODS_IN_PHYSICS_ISOLVER_H

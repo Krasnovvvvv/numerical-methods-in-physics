@@ -5,11 +5,12 @@
 #include "LabTask.h"
 #include "RandomSLAEGenerator.h"
 #include <iostream>
+#include <iomanip>
 #include <vector>
 
 class SLAE_ExactMethod_Task : public LabTask {
 public:
-    using LabTask::LabTask; // Наследуем конструктор, чтобы ExpectedCurveFunc пробрасывался!
+    using LabTask::LabTask;
 
     void run(const std::vector<size_t>& sizes) override {
         std::vector<double> xpoints, ytimes;
@@ -29,7 +30,13 @@ public:
             ytimes.push_back(elapsed);
 
             double relerror = (x_exact - result.solution).norm() / x_exact.norm();
-            std::cout << n << " | " << relerror << " | " << elapsed << "\n";
+
+            std::cout << std::setw(8) << n
+                      << " | " << std::setw(15) << std::setprecision(8)
+                      << std::scientific << relerror
+                      << " | " << std::setw(10)
+                      << std::fixed << std::setprecision(4)
+                      << elapsed << std::endl;
         }
         if (sizes.size() > 1)
             plotter.plot(xpoints, ytimes, "Actual", "n", "Time, ms", false, expected);

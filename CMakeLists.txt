@@ -14,25 +14,15 @@ target_link_libraries(Labs INTERFACE
         Matplot++::cimg
         Matplot++::matplot)
 
-add_executable(Lab1
-        src/lab1.cpp
-        include/Timer.h
-        include/Plotter.h
-        include/IDataGenerator.h
-        include/ISolver.h
-        include/LabTask.h
-        include/RandomSLAEGenerator.h
-        include/ThomasSolver.h
-        include/SLAE_ExactMethod_Task.h
-        include/AsymptoticFuncs.h
-        include/SLAE_IterMethod_Task.h
-        include/JacobiSolver.h
-        include/SeidelSolver.h
-        include/SORSolver.h
-        include/GradientDescentSolver.h
-        include/ConjugateGradientsSolver.h)
+file(GLOB_RECURSE LAB_COMMON_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
 
-target_link_libraries(Lab1 PRIVATE Labs)
+function(add_lab_task name)
+    add_executable(${name} src/${name}.cpp ${LAB_COMMON_HEADERS})
+    target_link_libraries(${name} PRIVATE Labs)
+endfunction()
+
+add_lab_task(Task1)
 
 
 
