@@ -17,7 +17,7 @@ public:
         double b_norm = b.norm();
         double rel_res;
         size_t k = 0;
-        for (; k < maxIter; ++k) {
+        for (; k < maxIter.value_or(1000); ++k) {
             for (size_t i = 0; i < n; ++i) {
                 double sum = 0.0;
                 for (size_t j = 0; j < n; ++j) {
@@ -27,7 +27,7 @@ public:
             }
             rel_res = (A * x_new - b).norm() / b_norm;
             residuals.emplace_back(k + 1, rel_res);
-            if (rel_res < tolerance)
+            if (rel_res < tolerance.value_or(1e-8))
                 return {x_new,k,rel_res, residuals};
             x = x_new;
         }
