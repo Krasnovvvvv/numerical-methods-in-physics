@@ -25,7 +25,8 @@ add_executable(Lab1
         include/ThomasSolver.h
         include/SLAE_ExactMethod_Task.h
         include/AsymptoticFuncs.h
-        include/SLAE_IterMethod_Task.h)
+        include/SLAE_IterMethod_Task.h
+        include/JacobiSolver.h)
 
 target_link_libraries(Lab1 PRIVATE Labs)
 
