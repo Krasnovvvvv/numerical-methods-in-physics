@@ -28,7 +28,8 @@ add_executable(Lab1
         include/SLAE_IterMethod_Task.h
         include/JacobiSolver.h
         include/SeidelSolver.h
-        include/SORSolver.h)
+        include/SORSolver.h
+        include/GradientDescentSolver.h)
 
 target_link_libraries(Lab1 PRIVATE Labs)
 
