@@ -4,6 +4,8 @@
 #pragma once
 #include "IDataGenerator.h"
 #include <random>
+#include <climits>
+
 class RandomSLAEGenerator : public IDataGenerator {
 
     bool isDiagonallyDominant(const Eigen::MatrixXd& A) {
@@ -38,19 +40,27 @@ class RandomSLAEGenerator : public IDataGenerator {
     }
 
 public:
+
+    explicit RandomSLAEGenerator(int min_v = 10, int max_v = 100) : minValue(min_v), maxValue(max_v) {
+        if (minValue < INT_MIN) minValue = INT_MIN;
+        if (minValue > INT_MAX) minValue = INT_MAX;
+        if (maxValue < INT_MIN) maxValue = INT_MIN;
+        if (maxValue > INT_MAX) maxValue = INT_MAX;
+    }
+
     Eigen::MatrixXd generateMatrix(size_t n, bool is_tridiagonal = false) override {
         if(is_tridiagonal) {
-            int diagHigh = 30;
+            int diagHigh = 3*maxValue;
             int maxTries = 100;
             for (int attempt = 0; attempt < maxTries; ++attempt) {
-                Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, 1, 10, diagHigh);
+                Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, minValue, maxValue, diagHigh);
                 if (isDiagonallyDominant(matrix)) {
                     return matrix;
                 }
                 diagHigh += 10; // наращиваем преобладание только при неудаче
             }
             // Если не удалось, явно формируем матрицу с преобладанием
-            Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, 1, 10, diagHigh * 2);
+            Eigen::MatrixXd matrix = generateTridiagonalMatrix(n, minValue, maxValue, diagHigh * 2);
             for (size_t i = 0; i < n; ++i) {
                 double sum = 0.0;
                 if (i > 0) sum += std::abs(matrix(i, i - 1));
@@ -84,6 +94,9 @@ public:
     Eigen::VectorXd generateVector(size_t n) override {
         throw std::logic_error("Not used in this context");
     }
+
+    int minValue;
+    int maxValue;
 
 };
 
