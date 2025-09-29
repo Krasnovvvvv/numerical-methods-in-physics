@@ -42,6 +42,10 @@ public:
             ylim({min_y - 0.1 * std::abs(min_y), max_y + 0.1 * std::abs(max_y)});
         } else {
             auto p = matplot::plot(x, y);
+
+            if(logarithmic)
+                p = matplot::loglog(x,y);
+
             p->marker_size(12).color("blue").display_name(label);
 
             double min_y = *std::min_element(y.begin(), y.end());
