@@ -8,13 +8,17 @@ class SimpleIterSolver : public IRootSolver {
 public:
     SimpleIterSolver(double tau) : tau(tau) {}
 
-    RootSolveResult solve(
+    std::optional<RootSolveResult> solve(
         std::function<double(double)> func,
         std::function<bool(double)> isInDomain,
-        double x0, double tol,
+        double tol,
+        double x0,
+        double x1 = 1,
+        double step = 0.001,
         size_t max_iter = 100
     ) override {
-        auto phi = [func, tau](double x) { return x - tau * func(x); };
+        std::optional<RootSolveResult> result = std::nullopt;
+        auto phi = [func, this](double x) { return x - this->tau * func(x); };
         double x_prev = x0, x_next = phi(x0);
         size_t iter = 0;
         std::vector<std::pair<size_t, double>> residuals;
@@ -24,7 +28,8 @@ public:
             ++iter;
             residuals.push_back({iter, std::abs(func(x_next))});
         }
-        return {x_next, iter, std::abs(func(x_next)), residuals};
+        result = {x_next, iter, std::abs(func(x_next)), residuals};
+        return result;
     }
 
 private:

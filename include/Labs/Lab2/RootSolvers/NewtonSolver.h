@@ -6,12 +6,16 @@
 
 class NewtonSolver : public IRootSolver {
 public:
-    RootSolveResult solve(
+    std::optional<RootSolveResult> solve(
         std::function<double(double)> func,
         std::function<bool(double)> isInDomain,
-        double x0, double tol,
+        double tol,
+        double x0,
+        double x1 = 1,
+        double step = 0.001,
         size_t max_iter = 100
     ) override {
+        std::optional<RootSolveResult> result = std::nullopt;
         auto der = [func](double x) {
             const double h = 1e-8;
             return (func(x + h) - func(x - h)) / (2 * h);
@@ -30,7 +34,8 @@ public:
             x_prev = x_next;
             ++iter;
         }
-        return {x_next, iter, std::abs(func(x_next)), residuals};
+        result = {x_next, iter, std::abs(func(x_next)), residuals};
+        return result;
     }
 };
 

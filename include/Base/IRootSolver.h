@@ -4,6 +4,7 @@
 #pragma once
 #include <vector>
 #include <functional>
+#include <optional>
 
 struct RootSolveResult {
     double root;
@@ -15,10 +16,13 @@ struct RootSolveResult {
 class IRootSolver {
 public:
     virtual ~IRootSolver() = default;
-    virtual RootSolveResult solve(
+    virtual std::optional<RootSolveResult> solve(
         std::function<double(double)> func,
         std::function<bool(double)> isInDomain,
-        double x0, double tol,
+        double tol,
+        double x0,
+        double x1 = 1, // для дихотомии - правый конец, для односторонних методов игнорируется
+        double step = 0.001,
         size_t max_iter = 100
     ) = 0;
 };
