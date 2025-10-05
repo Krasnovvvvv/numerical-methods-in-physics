@@ -10,9 +10,9 @@
 #include <optional>
 #include <cmath>
 
-class ParallelRootSolver : public IRootSolver {
+class ParallelBisecRootSolver : public IRootSolver {
 public:
-    ParallelRootSolver(int numThreads = 4) : threads(numThreads) {}
+    ParallelBisecRootSolver(int numThreads = 4) : threads(numThreads) {}
 
     std::optional<RootSolveResult> solve(
         std::function<double(double)> func,

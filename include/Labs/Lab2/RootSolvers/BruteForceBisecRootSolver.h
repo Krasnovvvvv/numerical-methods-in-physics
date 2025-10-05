@@ -5,7 +5,7 @@
 #include "Base/IRootSolver.h"
 #include "Helpers/refineRootBisection.h"
 
-class BruteForceRootSolver : public IRootSolver {
+class BruteForceBisecRootSolver : public IRootSolver {
 public:
     std::optional<RootSolveResult> solve(
         std::function<double(double)> func,

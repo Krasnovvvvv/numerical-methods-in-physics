@@ -1,6 +1,6 @@
 #include "Base/IRootSolver.h"
-#include "Labs/Lab2/RootSolvers/BruteForceRootSolver.h"
-#include "Labs/Lab2/RootSolvers/ParallelRootSolver.h"
+#include "Labs/Lab2/RootSolvers/BruteForceBisecRootSolver.h"
+#include "Labs/Lab2/RootSolvers/ParallelBisecRootSolver.h"
 #include "Labs/Lab2/RootSolvers/SimpleIterSolver.h"
 #include "Labs/Lab2/RootSolvers/NewtonSolver.h"
 #include "Labs/Lab2/Tasks/RootFindTask.h"
@@ -19,12 +19,12 @@ int main() {
     size_t max_iter = 5000;
 
     std::cout << "Brute Force Solver:\n";
-    BruteForceRootSolver brute_solver;
+    BruteForceBisecRootSolver brute_solver;
     RootFindTask brute_task(brute_solver);
     brute_task.run(func, isInDomain, tol, a, b, step, max_iter);
 
     std::cout << "\nParallel Solver:\n";
-    ParallelRootSolver parallel_solver(6);
+    ParallelBisecRootSolver parallel_solver(6);
     RootFindTask parallel_task(parallel_solver);
     parallel_task.run(func, isInDomain, tol, a, b, step, max_iter);
 
