@@ -1,6 +1,7 @@
 #ifndef NUMERICAL_METHODS_IN_PHYSICS_IROOTSOLVER_H
 #define NUMERICAL_METHODS_IN_PHYSICS_IROOTSOLVER_H
 
+#pragma once
 #include <vector>
 #include <functional>
 
