@@ -1,8 +1,6 @@
-#include "Labs/Lab2/RootFinders/BruteForceRootFinder.h"
+#include "Labs/Lab2/RootFinders/ParallelRootFinder.h"
 #include "Labs/Lab2/Tasks/RootFindTask.h"
-
 #include <cmath>
-#include <iostream>
 
 int main() {
 
@@ -12,10 +10,10 @@ int main() {
     auto isInDomain = [](double x) { return x > 0; };
 
     double a = 0.1, b = 5;
-    double step = 0.001;
-    double tolerance = 1e-8;
+    double step = 1e-4;
+    double tolerance = 1e-20;
 
-    BruteForceRootFinder finder;
+    ParallelRootFinder finder;
 
     RootFindTask task(finder);
 
