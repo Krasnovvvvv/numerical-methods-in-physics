@@ -1,6 +1,5 @@
 #include "Labs/Lab2/RootFinders/BruteForceRootFinder.h"
 #include "Labs/Lab2/Tasks/RootFindTask.h"
-#include "Helpers/Plotter.h"
 
 #include <cmath>
 #include <iostream>
@@ -17,9 +16,8 @@ int main() {
     double tolerance = 1e-8;
 
     BruteForceRootFinder finder;
-    Plotter plotter;
 
-    RootFindTask task(finder, &plotter);
+    RootFindTask task(finder);
 
     task.run(func, isInDomain, a, b, step, tolerance);
 
