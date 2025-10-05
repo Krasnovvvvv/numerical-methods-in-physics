@@ -19,7 +19,7 @@ public:
     virtual std::optional<RootInterval> findSignChange(
         std::function<double(double)> f,
         std::function<bool(double)> isInDomain, // функция ОДЗ
-        double a, double b, double step
+        double a, double b, double step, double tol
     ) = 0;
 };
 
