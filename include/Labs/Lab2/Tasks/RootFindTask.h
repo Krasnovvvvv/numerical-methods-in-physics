@@ -12,9 +12,9 @@
 #include <limits>
 #include <cmath>
 
-class RootFinderTask {
+class RootFindTask {
 public:
-    RootFinderTask(IRootFinder& finder, Plotter* plot = nullptr)
+    RootFindTask(IRootFinder& finder, Plotter* plot = nullptr)
         : finder(finder), plotter(plot) {}
 
     void run(
