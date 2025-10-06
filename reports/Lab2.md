@@ -220,7 +220,7 @@ std::optional<Interval> parallel_sign_change(
 
 ##### Основные уравнения
 
-Ток и сопротивление:
+Напряжение и сопротивление:
 
 $$
 V = I \cdot R(T)
