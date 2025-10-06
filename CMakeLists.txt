@@ -29,7 +29,7 @@ function(add_lab lab_number)
     endforeach()
 endfunction()
 
-add_lab(1)
+add_lab(2)
 
 
 
