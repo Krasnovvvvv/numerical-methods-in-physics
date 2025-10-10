@@ -29,28 +29,37 @@ static GaussTableEntry getGaussTable(size_t n) {
 
 class GaussSolver : public IIntegralSolver {
 public:
-    GaussSolver(size_t nodes = 3) : nodes_num(nodes) {}
+    GaussSolver(size_t max_nodes = 4) : max_nodes_(std::max(size_t(2), max_nodes)) {}
     std::string name() const override { return "Gauss-Christoffel"; }
 
     std::optional<IntegrateResult> integrate(
         std::function<double(double)> func, double a, double b,
         double /*tol*/, size_t /*max_intervals*/ = 0
     ) override {
-        auto tab = getGaussTable(nodes_num);
-        double xmid = (a + b) / 2;
-        double xhalf = (b - a) / 2;
-        double integral = 0.0;
-        for (size_t i = 0; i < tab.nodes.size(); ++i) {
-            double xi = xmid + xhalf * tab.nodes[i];
-            integral += tab.weights[i] * func(xi);
-        }
-        integral *= xhalf;
-        std::vector<std::pair<size_t, double>> estim = { {nodes_num, integral} };
+        std::vector<std::pair<size_t, double>> estim;
         std::vector<double> errors_hist;
-        return IntegrateResult{integral, nodes_num, 0.0, estim, errors_hist};
+        double last_integral = 0.0;
+
+        for (size_t n = 2; n <= max_nodes_; ++n) {
+            auto tab = getGaussTable(n);
+            double xmid = (a + b) / 2, xhalf = (b - a) / 2;
+            double integral = 0.0;
+            for (size_t i = 0; i < tab.nodes.size(); ++i)
+                integral += tab.weights[i] * func(xmid + xhalf * tab.nodes[i]);
+            integral *= xhalf;
+            estim.push_back({ n, integral });
+            if (n > 2)
+                errors_hist.push_back(std::abs(integral - last_integral));
+            last_integral = integral;
+        }
+
+        double final_result = estim.back().second;
+        double final_error = errors_hist.empty() ? 0.0 : errors_hist.back();
+        return IntegrateResult{final_result, estim.back().first, final_error, estim, errors_hist};
     }
+
 private:
-    size_t nodes_num;
+    size_t max_nodes_;
 };
 
 #endif //NUMERICAL_METHODS_IN_PHYSICS_GAUSSSOLVER_H
