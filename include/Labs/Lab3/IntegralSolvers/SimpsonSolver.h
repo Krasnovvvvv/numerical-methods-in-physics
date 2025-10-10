@@ -3,8 +3,9 @@
 
 #pragma once
 #include "Base/IIntegralSolver.h"
+#include <cmath>
 
-class SimpsonSolver : public IIntegralSover {
+class SimpsonSolver : public IIntegralSolver {
     std::optional<IntegrateResult> integrate(
             std::function<double(double)> func,
             double a, double b,

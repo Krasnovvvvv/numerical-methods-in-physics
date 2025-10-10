@@ -3,6 +3,7 @@
 
 #pragma once
 #include "Base/IIntegralSolver.h"
+#include <cmath>
 
 class TrapezoidSolver : public IIntegralSolver {
 public:

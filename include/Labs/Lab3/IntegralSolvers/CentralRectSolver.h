@@ -3,8 +3,9 @@
 
 #pragma once
 #include "Base/IIntegralSolver.h"
+#include <cmath>
 
-class CentralRectSolver : public IIntegralSover {
+class CentralRectSolver : public IIntegralSolver {
 public:
     std::optional<IntegrateResult> integrate(
             std::function<double(double)> func,
