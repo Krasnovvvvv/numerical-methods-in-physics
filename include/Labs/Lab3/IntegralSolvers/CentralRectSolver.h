@@ -10,7 +10,7 @@ public:
     std::string name() const override { return "The middle rectangles"; }
     std::optional<IntegrateResult> integrate(
         std::function<double(double)> func, double a, double b,
-        double tol, size_t max_intervals = 1000
+        double tol = 1e-8, size_t max_intervals = 1000
     ) override {
         size_t n = 2;
         double prev = 0, curr, h, error = 0;
