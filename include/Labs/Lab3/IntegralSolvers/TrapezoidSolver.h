@@ -2,7 +2,7 @@
 #define NUMERICAL_METHODS_IN_PHYSICS_TRAPEZOIDSOLVER_H
 
 #pragma once
-#include <Base/IIntegralSolver.h>
+#include "Base/IIntegralSolver.h"
 
 class TrapezoidSolver : public IIntegralSolver {
 public:

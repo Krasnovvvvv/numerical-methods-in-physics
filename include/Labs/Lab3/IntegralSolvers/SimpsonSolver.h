@@ -2,7 +2,7 @@
 #define NUMERICAL_METHODS_IN_PHYSICS_SIMPSONSOLVER_H
 
 #pragma once
-#include <Base/IIntegralSolver.h>
+#include "Base/IIntegralSolver.h"
 
 class SimpsonSolver : public IIntegralSover {
     std::optional<IntegrateResult> integrate(
