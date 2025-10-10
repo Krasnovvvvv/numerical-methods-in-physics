@@ -1,8 +1,9 @@
-#include "Base/IIntegralSolver.h"
+#include "Labs/Lab3/IntegralSolvers/GaussSolver.h"
 #include "Labs/Lab3/IntegralSolvers/CentralRectSolver.h"
 #include "Labs/Lab3/IntegralSolvers/TrapezoidSolver.h"
 #include "Labs/Lab3/IntegralSolvers/SimpsonSolver.h"
 #include "Labs/Lab3/Tasks/IntegrateTask.h"
+#include "Helpers/Plotter.h"
 #include <cmath>
 
 int main() {
@@ -12,15 +13,20 @@ int main() {
         return std::atan(0.3 * std::pow(x, 4) - 4.0 * x * std::sqrt(x));
     };
 
-    CentralRectSolver rect;
-    TrapezoidSolver trap;
-    SimpsonSolver simp;
+    CentralRectSolver rectSolver;
+    TrapezoidSolver trapSolver;
+    SimpsonSolver simpSolver;
+    GaussSolver gaussSolver;
 
-    IntegrateTask task_rect(rect, "The middle rectangles");
-    IntegrateTask task_trap(trap, "Trapezoids");
-    IntegrateTask task_simp(simp, "Simpson");
+    Plotter plotter;
+
+    IntegrateTask task_rect(rectSolver);
+    IntegrateTask task_trap(trapSolver);
+    IntegrateTask task_simp(simpSolver, &plotter);
+    IntegrateTask task_gauss(gaussSolver);
 
     task_rect.run(integrand, a, b, tol);
     task_trap.run(integrand, a, b, tol);
     task_simp.run(integrand, a, b, tol);
+    task_gauss.run(integrand, a, b, tol);
 }
