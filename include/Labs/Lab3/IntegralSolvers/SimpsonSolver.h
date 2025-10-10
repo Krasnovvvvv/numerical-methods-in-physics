@@ -8,7 +8,7 @@ class SimpsonSolver : public IIntegralSover {
     std::optional<IntegrateResult> integrate(
             std::function<double(double)> func,
             double a, double b,
-            double tol,
+            double tol = 1e-8,
             size_t max_intervals = 1000) override {
         size_t n = 2;
         double prev, curr, h, error = 0;
