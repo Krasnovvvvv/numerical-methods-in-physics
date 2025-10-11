@@ -3,11 +3,10 @@
 #include "Labs/Lab3/IntegralSolvers/TrapezoidSolver.h"
 #include "Labs/Lab3/IntegralSolvers/SimpsonSolver.h"
 #include "Labs/Lab3/Tasks/IntegrateTask.h"
-#include "Helpers/Plotter.h"
 #include <cmath>
 
 int main() {
-    constexpr double a = 0.1, b = 0.4, tol = 1e-6;
+    constexpr double a = 0.1, b = 0.4, tol = 1e-12;
 
     auto integrand = [](double x) {
         return std::atan(0.3 * std::pow(x, 4) - 4.0 * x * std::sqrt(x));
@@ -22,8 +21,8 @@ int main() {
 
     IntegrateTask task_rect(rectSolver);
     IntegrateTask task_trap(trapSolver);
-    IntegrateTask task_simp(simpSolver, &plotter);
-    IntegrateTask task_gauss(gaussSolver);
+    IntegrateTask task_simp(simpSolver);
+    IntegrateTask task_gauss(gaussSolver, &plotter);
 
     task_rect.run(integrand, a, b, tol);
     task_trap.run(integrand, a, b, tol);
