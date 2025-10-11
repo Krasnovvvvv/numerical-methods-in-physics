@@ -18,7 +18,8 @@ public:
     virtual ~IODESolver() = default;
     virtual ODEResult solve(
         const std::function<std::vector<double>(double, const std::vector<double>&)>& func,
-        std::vector<double> y0, double t0, double tn, double h, double tol = 1e-8) = 0;
+        std::vector<double> y0, double t0, double tn, double h,
+        double tol = 1e-8) = 0;
 
     virtual std::string name() const = 0;
 };
