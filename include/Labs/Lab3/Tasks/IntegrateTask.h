@@ -49,6 +49,30 @@ public:
                     "ln(n)",
                     "ln(error)",
                     false);
+
+                // --- Graph 2: gamma_k vs ln(n) ---
+                std::vector<double> x, y;
+                auto safe_log = [](double v) { return v <= 0 ? NAN : std::log(v); };
+                for (size_t i = 1; i + 1 < result->estimations.size(); ++i) {
+                    double ln_nk1 = safe_log(result->estimations[i + 1].first);
+                    double ln_nk  = safe_log(result->estimations[i].first);
+                    double ln_Rk1 = safe_log(std::abs(result->errors_hist[i]));
+                    double ln_Rk  = safe_log(std::abs(result->errors_hist[i - 1]));
+                    if (std::isnan(ln_nk1) || std::isnan(ln_nk) || std::isnan(ln_Rk) || std::isnan(ln_Rk1))
+                        continue;
+                    double denom = ln_nk1 - ln_nk;
+                    if (std::abs(denom) < 1e-8) continue;
+                    double gamma_k = (ln_Rk - ln_Rk1) / denom;
+                    x.emplace_back((ln_nk + ln_nk1) / 2.0);
+                    y.emplace_back(gamma_k);
+                }
+
+                plotter->plot(
+                        x, y,
+                        "gamma_k vs ln(n) for " + integrator.name(),
+                        "ln(n)",
+                        "gamma_k",
+                        false);
             }
         } else {
             std::cout << "Integral is not calculated (error)\n";

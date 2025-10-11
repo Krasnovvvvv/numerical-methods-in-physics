@@ -20,9 +20,9 @@ int main() {
     Plotter plotter;
 
     IntegrateTask task_rect(rectSolver);
-    IntegrateTask task_trap(trapSolver);
+    IntegrateTask task_trap(trapSolver, &plotter);
     IntegrateTask task_simp(simpSolver);
-    IntegrateTask task_gauss(gaussSolver, &plotter);
+    IntegrateTask task_gauss(gaussSolver);
 
     task_rect.run(integrand, a, b, tol);
     task_trap.run(integrand, a, b, tol);
