@@ -37,10 +37,10 @@ const std::function<std::vector<double>(double, const std::vector<double>&)>& fu
                 }
                 switch (graphNumber) {
                     case 1:
-                        plotter->plot(result->t, x, "x(t)", "t", "x");
+                        plotter->plot(result->t, x, "x(t) for " + solver.name(), "t", "x");
                         break;
                     case 2:
-                        plotter->plot(result->t, v, "v(t)", "t", "v");
+                        plotter->plot(result->t, v, "v(t) for " + solver.name(), "t", "v");
                         break;
                     case 3:
                         plotter->plot(result->t, result->errorEstimates,
