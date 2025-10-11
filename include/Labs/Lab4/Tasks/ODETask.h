@@ -29,21 +29,21 @@ const std::function<std::vector<double>(double, const std::vector<double>&)>& fu
                       << *std::max_element(result->errorEstimates.begin(),
                           result->errorEstimates.end()) << std::endl;
 
-            if (plotter && !result.y.empty()) {
+            if (plotter && !result->y.empty()) {
                 std::vector<double> x, v;
-                for (auto& state : result.y) {
+                for (auto& state : result->y) {
                     x.emplace_back(state[0]);
                     v.emplace_back(state[1]);
                 }
                 switch (graphNumber) {
                     case 1:
-                        plotter->plot(result.t, x, "x(t)", "t", "x");
+                        plotter->plot(result->t, x, "x(t)", "t", "x");
                         break;
                     case 2:
-                        plotter->plot(result.t, v, "v(t)", "t", "v");
+                        plotter->plot(result->t, v, "v(t)", "t", "v");
                         break;
                     case 3:
-                        plotter->plot(result.t, result.errorEstimates,
+                        plotter->plot(result->t, result->errorEstimates,
                             "Error for " + solver.name(), "t", "error");
                         break;
                     default:
