@@ -3,7 +3,7 @@
 #include <cmath>
 
 int main() {
-    constexpr double a = 0.0, b = 1.0, tol = 1e-12;
+    constexpr double a = 0.0, b = 1.0, tol = 1e-13;
 
     // replace the variable by the formula: x = t / (1 - t); t ∈ [0, 1)
     auto integrand = [](double t) -> double {
