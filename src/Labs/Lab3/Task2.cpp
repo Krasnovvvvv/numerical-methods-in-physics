@@ -2,6 +2,7 @@
 #include "Labs/Lab3/IntegralSolvers/CentralRectSolver.h"
 #include "Labs/Lab3/IntegralSolvers/TrapezoidSolver.h"
 #include "Labs/Lab3/IntegralSolvers/SimpsonSolver.h"
+#include "Labs/Lab3/IntegralSolvers/AdaptiveSimpsonSolver.h"
 #include "Labs/Lab3/Tasks/IntegrateTask.h"
 #include <cmath>
 
@@ -15,17 +16,20 @@ int main() {
     CentralRectSolver rectSolver;
     TrapezoidSolver trapSolver;
     SimpsonSolver simpSolver;
+    AdaptiveSimpsonSolver adSimpSolver;
     GaussSolver gaussSolver;
 
     Plotter plotter;
 
     IntegrateTask task_rect(rectSolver);
     IntegrateTask task_trap(trapSolver);
-    IntegrateTask task_simp(simpSolver, &plotter, 2);
+    IntegrateTask task_simp(simpSolver);
+    IntegrateTask task_adSimpson(adSimpSolver, &plotter, 1);
     IntegrateTask task_gauss(gaussSolver);
 
     task_rect.run(integrand, a, b, tol);
     task_trap.run(integrand, a, b, tol);
     task_simp.run(integrand, a, b, tol);
     task_gauss.run(integrand, a, b, tol);
+    task_adSimpson.run(integrand, a, b, tol);
 }
