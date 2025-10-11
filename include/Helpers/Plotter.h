@@ -46,7 +46,7 @@ public:
             if(logarithmic)
                 p = matplot::loglog(x,y);
 
-            p->marker_size(12).color("blue").display_name(label);
+            p->line_width(2).color("blue").display_name(label);
 
             double min_y = *std::min_element(y.begin(), y.end());
             double max_y = *std::max_element(y.begin(), y.end());
