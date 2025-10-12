@@ -37,6 +37,13 @@ public:
             v.push_back(state[1]);
         }
 
+        std::cout << "\n=== " << solver_->name() << " ===\n"
+                  << "Grid step: " << h << "\n"
+                  << "Number of steps: " << result->steps << "\n"
+                  << "Maximum error per step: "
+                  << *std::max_element(result->errorEstimates.begin(),
+                          result->errorEstimates.end()) << std::endl;
+
         switch (graphNumber) {
             case 1:
                 plotter->plot(result->t, x, "x(t) for " +
