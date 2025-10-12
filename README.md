@@ -21,6 +21,24 @@ These laboratory works showcase algorithms for solving core computational physic
 
 ---
 
+## 📁 Project Structure
+
+```
+numerical-methods-in-physics/
+├── docs/                 # Generated documentation (Doxygen, guides)
+├── examples/             # Example usage programs
+├── include/              # Public headers for numerical modules and solvers
+├── src/                  # Source files (algorithms, lab implementations)
+├── reports/              # Markdown/PDF lab reports and practical results
+├── CMakeLists.txt        # Build configuration (CMake)
+├── vcpkg.json            # Dependency manifest (Eigen, matplot++)
+├── README.md             # Project overview and instructions
+├── LICENSE               # MIT License
+├── .gitignore            # Git ignore rules
+```
+
+---
+
 ## 🔬 Laboratory Topics
 
 ### 🧮 Systems of Linear Algebraic Equations (SLAE)
