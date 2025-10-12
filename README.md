@@ -64,9 +64,16 @@ All completed laboratory reports (including results, and code descriptions) can 
 
 ---
 
-## License
+## 🤝 Contribution
 
-Released under the MIT License
+Contributions, bug reports, and feature requests are welcome!  
+Please open issues or pull requests on the GitHub repository
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License — see [![License](https://img.shields.io/github/license/Krasnovvvvv/numerical-methods-in-physics)](LICENSE)
 
 
 
