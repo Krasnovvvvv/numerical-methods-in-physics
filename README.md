@@ -64,6 +64,13 @@ All completed laboratory reports (including results, and code descriptions) can 
 
 ---
 
+## 📦 Dependencies
+
+- [matplot++](https://alandefreitas.github.io/matplotplusplus/) — a high-quality C++ plotting library for scientific visualization
+- [Eigen](https://eigen.tuxfamily.org/) — a fast, versatile C++ library for linear algebra and matrix operations
+
+> These dependencies are automatically handled via CMake (assuming installed on your system or via package managers like vcpkg)
+
 ## 🤝 Contribution
 
 Contributions, bug reports, and feature requests are welcome!  
