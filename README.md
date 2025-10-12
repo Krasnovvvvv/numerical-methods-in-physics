@@ -18,25 +18,25 @@ These laboratory works showcase algorithms for solving core computational physic
 
 ## 🔬 Laboratory Topics
 
-### Systems of Linear Algebraic Equations (SLAE) 🧮
+### 🧮 Systems of Linear Algebraic Equations (SLAE)
 
 Demonstrates solving tridiagonal and arbitrary systems using direct and iterative methods (e.g., Thomas algorithm, Jacobi, Gauss-Seidel), with application to real modeling tasks
 
-### � Root Finding Algorithms 
+### 🌱 Root Finding Algorithms 
 
 Contains implementations of the bisection (dichotomy), Newton, and simple iteration methods for solving non-linear equations. Demonstrates convergence efficiency and robustness on real physical functions
 
-### Numerical Integration 📐
+### 📐 Numerical Integration 
 
 Features various quadrature methods (rectangular, trapezoidal, Simpson's), with error analysis and comparisons on benchmark test cases
 
-### Ordinary Differential Equations (ODEs) 📊
+### 📊 Ordinary Differential Equations (ODEs) 
 
 Includes explicit and implicit schemes for ODEs, such as Euler, improved Euler and Runge-Kutta methods, tested on classical physical systems (oscillator, decay, etc.)
 
 ---
 
-## Getting Started 🚀
+## 🚀 Getting Started 
 
 To build the code, standard CMake workflows are recommended:
 
