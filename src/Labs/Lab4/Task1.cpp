@@ -1,33 +1,55 @@
-#include "Base/IODESolver.h"
+#include "Helpers/Plotter.h"
 #include "Labs/Lab4/ODESolvers/EulerSolver.h"
 #include "Labs/Lab4/ODESolvers/ImprovedEulerSolver.h"
 #include "Labs/Lab4/ODESolvers/RungeKutta4Solver.h"
-#include "Helpers/Plotter.h"
-#include "Labs/Lab4/Tasks/OdeTask.h"
-#include <vector>
-
-// task parameters
-constexpr double omega = 1.0;
-std::vector<double> oscillator_rhs(double /*t*/, const std::vector<double>& y) {
-    return {y[1], -omega * omega * y[0]};
-}
+#include "Labs/Lab4/Tasks/ODETask.h"
+#include "Labs/Lab4/Tasks/Strategies/ClassicStrategy.h"
+#include "Labs/Lab4/Tasks/Strategies/SolverDependenceStrategy.h"
+#include "Labs/Lab4/Tasks/Strategies/StepDependenceStrategy.h"
+#include "Helpers/ODEFuncs.h"
 
 int main() {
-    double t0 = 0.0;
-    double tn = 20.0;
-    double h = 1e-3;
-    std::vector<double> y0 = {1.0, 0.0}; // x(0)=1, v(0)=0
+
+    constexpr double t0 = 0.0, tn = 10.0, h = 0.001, tol = 1e-8;
+    std::vector<double> y0 = {1.0, 0.0};
 
     Plotter plotter;
-
     EulerSolver euler;
     ImprovedEulerSolver improvedEuler;
     RungeKutta4Solver rk4;
 
-    ODETask taskEuler(euler, &plotter);
-    ODETask taskImprovedEuler(improvedEuler, &plotter);
-    ODETask taskRK4(rk4, &plotter);
+    // --- CLASSIC ---
+    std::cout << "\n--- CLASSIC MODE ---\n";
+        {
+        auto strategy = std::make_unique<ClassicStrategy>(&rk4);
+        ODETask task(std::move(strategy));
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 1, &plotter); // x(t)
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 2, &plotter); // v(t)
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 3, &plotter); // error
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 4, &plotter); // phase traj
+    }
 
-    taskRK4.run(oscillator_rhs, y0, t0, tn, h);
+    // --- DEPENDENCE_STEP ---
+    std::cout << "\n--- DEPENDENCE_STEP MODE ---\n";
+    {
+        std::vector<double> steps = {0.01, 0.001};
+        auto strategy = std::make_unique<StepDependenceStrategy>(&rk4);
+        ODETask task(std::move(strategy));
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 1, &plotter, steps);
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 2, &plotter, steps);
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 3, &plotter, steps);
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 4, &plotter, steps);
+    }
 
+    // --- DEPENDENCE_SOLVER ---
+    std::cout << "\n--- DEPENDENCE_SOLVER MODE ---\n";
+    {
+        std::vector<IODESolver*> solvers = {&euler, &improvedEuler, &rk4};
+        auto strategy = std::make_unique<SolverDependenceStrategy>();
+        ODETask task(std::move(strategy));
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 1, &plotter, {}, {}, solvers);
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 2, &plotter, {}, {}, solvers);
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 3, &plotter, {}, {}, solvers);
+        task.run(harmonicOscillator, y0, t0, tn, h, tol, 4, &plotter, {}, {}, solvers);
+    }
 }
