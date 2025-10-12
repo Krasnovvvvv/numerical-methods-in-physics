@@ -1,6 +1,5 @@
 # Numerical Methods in Physics
 
-Welcome to the "Numerical Methods in Physics" repository!
 This project contains C++ implementations of a variety of classic and modern numerical techniques, applied to physical problems encountered in laboratory courses and practical assignments. The codebase is designed with clarity, scalability, and reproducibility in mind
 
 ---
