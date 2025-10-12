@@ -2,61 +2,35 @@
 #define NUMERICAL_METHODS_IN_PHYSICS_ODETASK_H
 
 #pragma once
-#include "Base/IODESolver.h"
-#include "Helpers/Plotter.h"
-#include "Helpers/Timer.h"
-#include <iostream>
-#include <optional>
+#include "Labs/Lab4/Tasks/IODETaskStrategy.h"
+#include <memory>
 
 class ODETask {
 public:
-    explicit ODETask(IODESolver& solver, Plotter* plotter = nullptr, unsigned short graph_num = 1)
-        : solver(solver), plotter(plotter), graphNumber(graph_num) {}
+    explicit ODETask(std::unique_ptr<IODETaskStrategy> strategy = nullptr)
+        : strategy_(std::move(strategy)) {}
 
-void run(
-const std::function<std::vector<double>(double, const std::vector<double>&)>& func,
-    const std::vector<double>& y0, double t0, double tn, double h, double tol = 1e-8) {
-        Timer<std::chrono::microseconds> timer;
-        std::optional<ODEResult> result = solver.solve(func, y0, t0, tn, h, tol);
-        auto elapsed_us = timer.elapsed();
+    void setStrategy(std::unique_ptr<IODETaskStrategy> strategy) {
+        strategy_ = std::move(strategy);
+    }
 
-        std::cout << "\n=== " << solver.name() << " ===\n";
-
-        if (result) {
-            std::cout << "Grid step: " << h << "\n"
-                      << "Number of steps: " << result->steps << "\n"
-                      << "Maximum error per step: "
-                      << *std::max_element(result->errorEstimates.begin(),
-                          result->errorEstimates.end()) << std::endl;
-
-            if (plotter && !result->y.empty()) {
-                std::vector<double> x, v;
-                for (auto& state : result->y) {
-                    x.emplace_back(state[0]);
-                    v.emplace_back(state[1]);
-                }
-                switch (graphNumber) {
-                    case 1:
-                        plotter->plot(result->t, x, "x(t) for " + solver.name(), "t", "x");
-                        break;
-                    case 2:
-                        plotter->plot(result->t, v, "v(t) for " + solver.name(), "t", "v");
-                        break;
-                    case 3:
-                        plotter->plot(result->t, result->errorEstimates,
-                            "Error for " + solver.name(), "t", "error");
-                        break;
-                    default:
-                        break;
-                }
-            }
-       }
+    void run(const std::function<std::vector<double>(double, const std::vector<double>&)>& rhs,
+             const std::vector<double>& y0,
+             double t0, double tn,
+             double h, double tol,
+             unsigned short graphNumber,
+             Plotter* plotter,
+             std::vector<double> steps = {},
+             std::vector<double> tolerances = {},
+             std::vector<IODESolver*> solvers = {})
+    {
+        if (!strategy_)
+            throw std::runtime_error("Strategy not set!");
+        strategy_->run(rhs, y0, t0, tn, h, tol, graphNumber, plotter, steps, tolerances, solvers);
     }
 
 private:
-    IODESolver& solver;
-    Plotter* plotter;
-    unsigned short graphNumber;
+    std::unique_ptr<IODETaskStrategy> strategy_;
 };
 
 #endif //NUMERICAL_METHODS_IN_PHYSICS_ODETASK_H
