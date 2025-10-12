@@ -25,7 +25,7 @@ These laboratory works showcase algorithms for solving core computational physic
 
 ```
 numerical-methods-in-physics/
-├── images/               # Necessary schedules
+├── images/               # Necessary graphs
 ├── include/              # Public headers for numerical modules and solvers
 ├── reports/              # Markdown lab reports and practical results
 ├── src/Labs              # Source files (lab tasks implementations)
