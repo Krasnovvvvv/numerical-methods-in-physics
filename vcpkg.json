@@ -1,0 +1,8 @@
+{
+  "name": "numerical-methods-in-physics",
+  "version": "1.0.0",
+  "dependencies": [
+    "eigen3",
+    "matplotplusplus"
+  ]
+}
