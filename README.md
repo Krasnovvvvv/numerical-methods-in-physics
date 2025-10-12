@@ -25,11 +25,10 @@ These laboratory works showcase algorithms for solving core computational physic
 
 ```
 numerical-methods-in-physics/
-├── docs/                 # Generated documentation (Doxygen, guides)
-├── examples/             # Example usage programs
+├── images/               # Necessary schedules
 ├── include/              # Public headers for numerical modules and solvers
-├── src/Labs              # Source files (lab tasks implementations)
 ├── reports/              # Markdown lab reports and practical results
+├── src/Labs              # Source files (lab tasks implementations)
 ├── CMakeLists.txt        # Build configuration (CMake)
 ├── vcpkg.json            # Dependency manifest (Eigen, matplot++)
 ├── README.md             # Project overview and instructions
