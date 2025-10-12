@@ -38,6 +38,15 @@ Includes explicit and implicit schemes for ODEs, such as Euler, improved Euler a
 
 ## 🚀 Getting Started 
 
+### 🛠️ Prerequisites
+
+- C++17 compatible compiler (GCC, Clang, MSVC)
+- CMake 3.14 or newer
+- [matplot++](https://alandefreitas.github.io/matplotplusplus/) development files
+- [Eigen](https://eigen.tuxfamily.org/) library (header-only, managed via CMake or package manager)
+
+### ⚡ Build
+
 To build the code, standard CMake workflows are recommended:
 
 ```bash
@@ -51,7 +60,7 @@ make
 
 ---
 
-## Reports
+## 📄 Reports
 
 All completed laboratory reports (including results, and code descriptions) can be found here:
 
@@ -70,6 +79,8 @@ All completed laboratory reports (including results, and code descriptions) can 
 - [Eigen](https://eigen.tuxfamily.org/) — a fast, versatile C++ library for linear algebra and matrix operations
 
 > These dependencies are automatically handled via CMake (assuming installed on your system or via package managers like vcpkg)
+
+---
 
 ## 🤝 Contribution
 
