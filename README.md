@@ -1,11 +1,11 @@
 # ⚡ Numerical Methods in Physics
 
-![GitHub last commit](https://img.shields.io/github/last-commit/Krasnovvvvv/numerical-methods-in-physics?style=for-the-badge)
-![GitHub repo size](https://img.shields.io/github/repo-size/Krasnovvvvv/numerical-methods-in-physics?style=for-the-badge)
-![GitHub top language](https://img.shields.io/github/languages/top/Krasnovvvvv/numerical-methods-in-physics?style=for-the-badge)
-![MIT License](https://img.shields.io/github/license/Krasnovvvvv/numerical-methods-in-physics?style=for-the-badge)
-![Stars](https://img.shields.io/github/stars/Krasnovvvvv/numerical-methods-in-physics?style=for-the-badge)
-![Issues](https://img.shields.io/github/issues/Krasnovvvvv/numerical-methods-in-physics?style=for-the-badge)
+![GitHub last commit](https://img.shields.io/github/last-commit/Krasnovvvvv/numerical-methods-in-physics)
+![GitHub repo size](https://img.shields.io/github/repo-size/Krasnovvvvv/numerical-methods-in-physics)
+![GitHub top language](https://img.shields.io/github/languages/top/Krasnovvvvv/numerical-methods-in-physics)
+![MIT License](https://img.shields.io/github/license/Krasnovvvvv/numerical-methods-in-physics)
+![Stars](https://img.shields.io/github/stars/Krasnovvvvv/numerical-methods-in-physics)
+![Issues](https://img.shields.io/github/issues/Krasnovvvvv/numerical-methods-in-physics)
 
 This project contains C++ implementations of a variety of classic and modern numerical techniques, applied to physical problems encountered in laboratory courses and practical assignments. The codebase is designed with clarity, scalability, and reproducibility in mind
 
