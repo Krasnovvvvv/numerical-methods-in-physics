@@ -28,8 +28,8 @@ numerical-methods-in-physics/
 ├── docs/                 # Generated documentation (Doxygen, guides)
 ├── examples/             # Example usage programs
 ├── include/              # Public headers for numerical modules and solvers
-├── src/                  # Source files (algorithms, lab implementations)
-├── reports/              # Markdown/PDF lab reports and practical results
+├── src/Labs              # Source files (lab tasks implementations)
+├── reports/              # Markdown lab reports and practical results
 ├── CMakeLists.txt        # Build configuration (CMake)
 ├── vcpkg.json            # Dependency manifest (Eigen, matplot++)
 ├── README.md             # Project overview and instructions
