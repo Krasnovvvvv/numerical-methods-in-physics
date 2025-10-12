@@ -3,19 +3,21 @@
 Welcome to the "Numerical Methods in Physics" repository!
 This project contains C++ implementations of a variety of classic and modern numerical techniques, applied to physical problems encountered in laboratory courses and practical assignments. The codebase is designed with clarity, scalability, and reproducibility in mind
 
-## About
+---
+
+## ℹ️ About
 
 These laboratory works showcase algorithms for solving core computational physics problems. The implementations are modular and leverage clean C++ patterns to facilitate study, reuse, and extension for new problems
 
 ---
 
-## Laboratory Topics 🔬
+## 🔬 Laboratory Topics
 
 ### Systems of Linear Algebraic Equations (SLAE) 🧮
 
 Demonstrates solving tridiagonal and arbitrary systems using direct and iterative methods (e.g., Thomas algorithm, Jacobi, Gauss-Seidel), with application to real modeling tasks
 
-### Root Finding Algorithms 🌱
+### � Root Finding Algorithms 
 
 Contains implementations of the bisection (dichotomy), Newton, and simple iteration methods for solving non-linear equations. Demonstrates convergence efficiency and robustness on real physical functions
 
