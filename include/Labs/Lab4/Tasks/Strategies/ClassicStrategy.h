@@ -42,7 +42,8 @@ public:
                   << "Number of steps: " << result->steps << "\n"
                   << "Maximum error per step: "
                   << *std::max_element(result->errorEstimates.begin(),
-                          result->errorEstimates.end()) << std::endl;
+                          result->errorEstimates.end()) << std::endl
+                  << "Time: " << elapsed_us << " ms"<<std::endl;
 
         switch (graphNumber) {
             case 1:
