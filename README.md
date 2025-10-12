@@ -6,6 +6,9 @@
 ![Issues](https://img.shields.io/github/issues/Krasnovvvvv/numerical-methods-in-physics)
 ![Stars](https://img.shields.io/github/stars/Krasnovvvvv/numerical-methods-in-physics)
 
+![CI Ubuntu](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Ubuntu&logo=ubuntu&style=for-the-badge)
+![CI Windows](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Windows&logo=windows&style=for-the-badge)
+
 This project contains C++ implementations of a variety of classic and modern numerical techniques, applied to physical problems encountered in laboratory courses and practical assignments. The codebase is designed with clarity, scalability, and reproducibility in mind
 
 ---
@@ -57,6 +60,24 @@ cmake ..
 make
 ./lab_executable
 ```
+
+---
+
+## 🚦 Build Status
+
+| Platform     | Status                                                                                   |
+|:------------:|:----------------------------------------------------------------------------------------:|
+| Ubuntu/Linux | ![CI Ubuntu](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Ubuntu&logo=ubuntu&style=for-the-badge) |
+| Windows      | ![CI Windows](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Windows&logo=windows&style=for-the-badge) |
+
+--
+
+## 🖥️ Platforms
+
+| Supported Platforms |
+|:-------------------:|
+| ![Ubuntu](https://img.shields.io/badge/Ubuntu-20.04+-orange?logo=ubuntu&style=for-the-badge) |
+| ![Windows](https://img.shields.io/badge/Windows-10+-blue?logo=windows&style=for-the-badge)   |
 
 ---
 
