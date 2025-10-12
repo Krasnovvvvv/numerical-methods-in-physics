@@ -66,10 +66,8 @@ All completed laboratory reports (including results, and code descriptions) can 
 
 | 📝 Report                                 | 📎 Link                        |
 | ----------------------------------------- | ------------------------------ |
-| Root Finding Lab Report 📄                | [Download PDF](link_to_report_1) |
-| Numerical Integration Lab Report 📄       | [Download PDF](link_to_report_2) |
-| SLAE Lab Report 📄                        | [Download PDF](link_to_report_3) |
-| ODEs Lab Report 📄                        | [Download PDF](link_to_report_5) |
+| SLAE 📄                                   | [Read](reports/Lab1.md)         |
+| Root Finding  📄                          | [Read](reports/Lab2.md)       |
 
 ---
 
