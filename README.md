@@ -65,15 +65,6 @@ make
 
 ---
 
-## 🚦 Build Status
-
-| Platform     | Status                                                                                   |
-|:------------:|:----------------------------------------------------------------------------------------:|
-| Ubuntu/Linux | ![CI Ubuntu](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Ubuntu&logo=ubuntu) |
-| Windows      | ![CI Windows](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Windows&logo=windows) |
-
----
-
 ## 📄 Reports
 
 All completed laboratory reports (including results, and code descriptions) can be found here:
