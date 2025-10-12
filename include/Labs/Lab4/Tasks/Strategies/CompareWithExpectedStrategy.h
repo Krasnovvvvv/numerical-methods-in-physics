@@ -47,7 +47,7 @@ public:
             xs = { t };
             ys = { abs_err };
             labels = { "Abs error" };
-            plotter->plot(xs, ys, labels, "t", "|x_num - x_expected|");
+            plotter->plot(xs, ys, labels, "t", "|x_n - x_e|");
         }
     }
 
