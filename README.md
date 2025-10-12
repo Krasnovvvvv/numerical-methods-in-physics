@@ -64,10 +64,10 @@ make
 
 All completed laboratory reports (including results, and code descriptions) can be found here:
 
-| 📝 Report                                 | 📎 Link                       |
-| ----------------------------------------- | ------------------------------ |
-| Systems of Linear Algebraic Equations 📄  | [Read](reports/Lab1.md)       |
-| Root Finding Algorithms   📄              | [Read](reports/Lab2.md)       |
+|        📝 Report                         |        📎 Link                |
+|:----------------------------------------:|:-----------------------------:|
+| Systems of Linear Algebraic Equations 📄 | [Read](reports/Lab1.md)       |
+| Root Finding Algorithms 📄               | [Read](reports/Lab2.md)       |
 
 ---
 
