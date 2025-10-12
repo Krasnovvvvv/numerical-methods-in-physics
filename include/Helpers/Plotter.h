@@ -61,6 +61,32 @@ public:
         show();
     }
 
+    void plot(const std::vector<std::vector<double>>& xs,
+                    const std::vector<std::vector<double>>& ys,
+                    const std::vector<std::string>& labels,
+                    const std::string& x_label,
+                    const std::string& y_label)
+    {
+        using namespace matplot;
+        figure();
+        hold(on);
+
+        for(size_t i = 0; i < xs.size(); ++i) {
+            auto l = matplot::plot(xs[i], ys[i]);
+            if (!labels.empty() && i < labels.size())
+                l->display_name(labels[i]);
+            l->line_width(2);
+        }
+
+        xlabel(x_label);
+        ylabel(y_label);
+        legend()->font_size(10);
+        xtickangle(45);
+        grid(true);
+        show();
+        hold(off);
+    }
+
 };
 
 
