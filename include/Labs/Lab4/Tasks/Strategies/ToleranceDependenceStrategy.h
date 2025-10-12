@@ -4,6 +4,8 @@
 #pragma once
 #include "Base/IODESolver.h"
 #include "Labs/Lab4/Tasks/IODETaskStrategy.h"
+#include <sstream>
+#include <iomanip>
 
 class ToleranceDependenceStrategy : public IODETaskStrategy {
 public:
@@ -41,7 +43,10 @@ public:
                 case 4: xs.push_back(x); ys.push_back(v); break;
                 default: break;
             }
-            labels.push_back("tol = " + std::to_string(tol));
+            std::ostringstream oss;
+            oss << std::scientific << std::setprecision(1) << tol;
+            std::string tolLabel = "tol = " + oss.str();
+            labels.push_back(tolLabel);
         }
         plotter->plot(xs, ys, labels,
             (graphNumber == 4 ? "x" : "t"),
