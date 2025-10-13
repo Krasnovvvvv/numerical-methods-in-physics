@@ -196,7 +196,8 @@ $$
 y_0 \\
 y_1
 \end{pmatrix}
-= \begin{pmatrix}
+= 
+\begin{pmatrix}
 y_1 \\
 - \dfrac{2b}{t} y_1 - \omega^2 y_0
 \end{pmatrix}
