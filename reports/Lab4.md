@@ -198,7 +198,7 @@ y_1
 \end{pmatrix}
 = \begin{pmatrix}
 y_1 \\
-- \frac{2b}{t} y_1 - \omega^2 y_0
+- \dfrac{2b}{t} y_1 - \omega^2 y_0
 \end{pmatrix}
 $$
 
