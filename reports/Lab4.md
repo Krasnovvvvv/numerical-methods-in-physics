@@ -196,12 +196,24 @@ $$
 y_0 \\
 y_1
 \end{pmatrix}
-= 
-\begin{pmatrix}
+= \begin{pmatrix}
 y_1 \\
-- \dfrac{2b}{t} y_1 - \omega^2 y_0
+-\dfrac{2b}{t} y_1 - \omega^2 y_0
 \end{pmatrix}
 $$
+
+$$
+\frac{d}{dt}
+\begin{pmatrix}
+y_0 \\
+y_1
+\end{pmatrix}
+= \begin{pmatrix}
+y_1 \\
+-\omega^2 y_0
+\end{pmatrix}
+$$
+
 
 **Аналитическое решение задачи Эйлера-Коши принимает вид:**
 
