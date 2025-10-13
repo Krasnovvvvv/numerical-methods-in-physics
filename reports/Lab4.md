@@ -174,7 +174,7 @@ $$
 **Начальные условия:**
 
 $$
-x(1) = 1, \qquad \dot{x}(1) = 1, \qquad t \in [1,\, 100]
+x(1) = 1, \qquad \dot{x}(1) = 1, \qquad t \in [1,100]
 $$
 
 **Для численного решения это уравнение представляется в виде системы первого порядка:**
@@ -220,7 +220,7 @@ $$
 **Полная формула производной (для второго уравнения):**
 
 $$
-\dot{x}(t) = -b\, t^{-b-1} \left[ C_1 \cos(\omega t) + C_2 \sin(\omega t) \right]
+\dot{x}(t) = -b\ t^{-b-1} \left[ C_1 \cos(\omega t) + C_2 \sin(\omega t) \right]
             + t^{-b} \left[ -C_1 \omega \sin(\omega t) + C_2 \omega \cos(\omega t) \right]
 $$
 
