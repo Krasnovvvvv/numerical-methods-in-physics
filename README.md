@@ -91,6 +91,7 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Systems of Linear Algebraic Equations 📄 | [Read](reports/Lab1.md)       |
 | Root Finding Algorithms 📄               | [Read](reports/Lab2.md)       |
 | Integrating Algorithms 📄                | [Read](reports/Lab3.md)       |
+| Solving ODEs Algorithms 📄               | [Read](reports/Lab4.md)       |
 
 ---
 
