@@ -102,11 +102,11 @@ _Метод Рунге-Кутты четвёртого порядка (RK4)_ —
 
 $$
 \begin{align*}
-k_1 & = f(x_i, y_i) \\
-k_2 & = f\left(x_i + \frac{h}{2},\ y_i + \frac{h}{2}k_1\right) \\
-k_3 & = f\left(x_i + \frac{h}{2},\ y_i + \frac{h}{2}k_2\right) \\
-k_4 & = f(x_i + h,\ y_i + h k_3) \\
-y_{i+1} & = y_i + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)
+    k_1   & = f(x_i, y_i) \\
+    k_2   & = f\left(x_i + \frac{h}{2},\ y_i + \frac{h}{2}k_1\right) \\
+    k_3   & = f\left(x_i + \frac{h}{2},\ y_i + \frac{h}{2}k_2\right) \\
+    k_4   & = f(x_i + h,\ y_i + h k_3) \\
+    y_{i+1} & = y_i + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)
 \end{align*}
 $$
 
