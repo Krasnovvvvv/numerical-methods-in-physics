@@ -8,8 +8,11 @@
 
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-20.04+-orange?logo=ubuntu)
 ![Windows](https://img.shields.io/badge/Windows-10+-blue?logo=windows)
+![macOS](https://img.shields.io/badge/macOS-12+-silver?logo=apple)
+
 ![CI Ubuntu](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Ubuntu&logo=ubuntu)
 ![CI Windows](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=Windows&logo=windows)
+![CI macOS](https://img.shields.io/github/actions/workflow/status/Krasnovvvvv/numerical-methods-in-physics/ci.yml?branch=main&label=macOS&logo=apple)
 
 This project contains C++ implementations of a variety of classic and modern numerical techniques, applied to physical problems encountered in laboratory courses and practical assignments. The codebase is designed with clarity, scalability, and reproducibility in mind
 
