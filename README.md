@@ -33,7 +33,7 @@ numerical-methods-in-physics/
 ├── reports/              # Markdown lab reports and practical results
 ├── src/Labs              # Source files (lab tasks implementations)
 ├── CMakeLists.txt        # Build configuration (CMake)
-├── vcpkg.json            # Dependency manifest (Eigen, matplot++)
+├── vcpkg.json            # Dependency manifest
 ├── README.md             # Project overview and instructions
 ├── LICENSE               # MIT License
 ├── .gitignore            # Git ignore rules
