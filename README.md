@@ -1,7 +1,6 @@
 # ⚡ Numerical Methods in Physics
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/Krasnovvvvv/numerical-methods-in-physics)
-![GitHub top language](https://img.shields.io/github/languages/top/Krasnovvvvv/numerical-methods-in-physics)
 ![MIT License](https://img.shields.io/github/license/Krasnovvvvv/numerical-methods-in-physics)
 ![Issues](https://img.shields.io/github/issues/Krasnovvvvv/numerical-methods-in-physics)
 ![Stars](https://img.shields.io/github/stars/Krasnovvvvv/numerical-methods-in-physics)
