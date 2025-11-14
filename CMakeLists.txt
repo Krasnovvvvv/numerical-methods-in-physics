@@ -18,9 +18,21 @@ file(GLOB_RECURSE LAB_COMMON_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
 
 function(add_lab lab_number)
-    file(GLOB TASK_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}/src/Labs/Lab${lab_number}/Task*.cpp"
-    )
+    set(is_special OFF)
+    if(ARGC GREATER 1)
+        set(is_special ${ARGV1})
+    endif()
+
+    if(is_special)
+        file(GLOB TASK_SOURCES
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/Labs/Special/Lab${lab_number}/Task*.cpp"
+        )
+    else()
+        file(GLOB TASK_SOURCES
+                "${CMAKE_CURRENT_SOURCE_DIR}/src/Labs/Lab${lab_number}/Task*.cpp"
+        )
+    endif()
+
     foreach(task_src ${TASK_SOURCES})
         get_filename_component(task_name ${task_src} NAME_WE)
         add_executable(${task_name} ${task_src} ${LAB_COMMON_HEADERS})
@@ -29,6 +41,7 @@ function(add_lab lab_number)
     endforeach()
 endfunction()
 
-add_lab(4)
+
+add_lab(1 ON)
 
 
