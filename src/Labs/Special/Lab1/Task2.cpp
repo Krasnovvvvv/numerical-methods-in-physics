@@ -80,4 +80,20 @@ int main() {
     // ====== Investigation of the error dependence on the number of corrections ======
     std::cout << "\nSweep by the number of correction iterations in ABM4:\n";
     run_corrections_sweep(ode_rhs, y0, t0, tn, h, U_exact, &plot, 1, 5);
+
+    // ====== ADDITIONAL BLOCK: A Tough task ======
+    std::cout << "\n=== A tough task for a correction test ===\n";
+
+    auto rhs_stiff = [](double t, const std::vector<double>& y) {
+        return std::vector<double>{ -1000.0*y[0] + 3000.0 - 2000.0*std::exp(-t) };
+    };
+    auto exact_stiff = [](double t) {
+        return 3. - 0.998 * std::exp(-1000.0 * t) - 2.002 * std::exp(-t);
+    };
+    std::vector<double> y0_stiff = {0.0};
+    double t0_stiff = 0.0, tn_stiff = 0.01, h_stiff = 0.001;
+
+    std::cout << "Sweep (corr=1..) for stiff problem, h=" << h_stiff << "\n";
+    run_corrections_sweep(rhs_stiff, y0_stiff, t0_stiff, tn_stiff, h_stiff,
+        exact_stiff, &plot, 1, 10);
 }
