@@ -8,10 +8,12 @@
 
 class AdamsMoulton4Solver : public IODESolver {
 public:
-    AdamsMoulton4Solver(IODESolver* starter_method = nullptr)
-        : starter_solver(starter_method) {}
+    AdamsMoulton4Solver(IODESolver* starter_method = nullptr, int num_corrections = 1)
+        : starter_solver(starter_method), corrections(num_corrections) {}
 
-    std::string name() const override { return "Adams-Bashforth-Moulton 4"; }
+    std::string name() const override {
+        return "Adams-Bashforth-Moulton 4 (" + std::to_string(corrections) + " corr.)";
+    }
 
     ODEResult solve(
         const std::function<std::vector<double>(double, const std::vector<double>&)>& func,
@@ -71,15 +73,19 @@ public:
             }
 
             // The Adams-Moulton Corrector 4
-            auto f_pred = func(time + h, predictor);
-            std::vector<double> next_state = state;
-            for (size_t j = 0; j < state.size(); ++j) {
-                double incr =
-                    (9.0/24)*f_pred[j]
-                    + (19.0/24)*f0[j]
-                    - (5.0/24)*f_hist[0][j]
-                    + (1.0/24)*f_hist[1][j];
-                next_state[j] += h * incr;
+            std::vector<double> next_state = predictor;
+            for (int iter = 0; iter < corrections; ++iter) {
+                auto f_pred = func(time + h, next_state);
+                std::vector<double> new_state = state;
+                for (size_t j = 0; j < state.size(); ++j) {
+                    double incr =
+                        (9.0/24)*f_pred[j]
+                        + (19.0/24)*f0[j]
+                        - (5.0/24)*f_hist[0][j]
+                        + (1.0/24)*f_hist[1][j];
+                    new_state[j] += h * incr;
+                }
+                next_state.swap(new_state);
             }
 
             f_hist.push_front(f0);
@@ -97,6 +103,7 @@ public:
 
 private:
     IODESolver* starter_solver;
+    int corrections;
 };
 
 #endif // NUMERICAL_METHODS_IN_PHYSICS_ADAMSMOULTON4SOLVER_H
