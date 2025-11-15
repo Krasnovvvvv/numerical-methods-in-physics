@@ -7,14 +7,14 @@
 #include <vector>
 #include <stdexcept>
 
-class GearSolver : public IODESolver {
+class AdamsBashforthSolver : public IODESolver {
 public:
-    GearSolver(int order = 2, IODESolver* starter_method = nullptr)
+    AdamsBashforthSolver(int order = 2, IODESolver* starter_method = nullptr)
         : m_order(order), starter_solver(starter_method)
     {
         if (order < 1 || order > 4)
-            throw std::invalid_argument("GearSolver: Only orders 1-4 supported.");
-        gear_coeffs = {                // orders
+            throw std::invalid_argument("AdamsBashforthSolver: Only orders 1-4 supported.");
+        coeffs = {                // orders
             {1},                         // 1
             {3.0/2, -1.0/2},             // 2
             {23.0/12, -16.0/12, 5.0/12}, // 3
@@ -73,7 +73,7 @@ public:
             }
         }
 
-        // --- The main cycle of the Gear method ---
+        // --- The main cycle of the Adams Bashforth method ---
         while (time <= tn) {
             result.t.emplace_back(time);
             result.y.emplace_back(state);
@@ -88,7 +88,7 @@ public:
             for (size_t j = 0; j < new_state.size(); ++j) {
                 double incr = 0;
                 for (int k = 0; k < m_order; ++k)
-                    incr += gear_coeffs[m_order-1][k] * f_hist[k][j];
+                    incr += coeffs[m_order-1][k] * f_hist[k][j];
                 new_state[j] += h * incr;
             }
 
@@ -107,7 +107,7 @@ public:
 
 private:
     int m_order;
-    std::vector<std::vector<double>> gear_coeffs;
+    std::vector<std::vector<double>> coeffs;
     IODESolver* starter_solver;
 };
 #endif // NUMERICAL_METHODS_IN_PHYSICS_GEARSOLVER_H
