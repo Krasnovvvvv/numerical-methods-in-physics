@@ -1,6 +1,6 @@
 #include "Labs/Special/Lab1/Tasks/ODETask.h"
 #include "Labs/Lab4/ODESolvers/RungeKutta4Solver.h"
-#include "Labs/Special/Lab1/ODESolvers/GearSolver.h"
+#include "Labs/Special/Lab1/ODESolvers/GearBDFSolver.h"
 #include "Labs/Special/Lab1/ODESolvers/AdamsMoulton4Solver.h"
 #include "Helpers/Plotter.h"
 #include <cmath>
@@ -47,7 +47,7 @@ int main() {
     };
     double U0 = 0.5;
     std::vector<double> y0 = {U0};
-    double t0 = 0.0, tn = 1.0, h = 0.1;
+    double t0 = 0.0, tn = 0.1, h = 0.001;
 
     auto U_exact = [](double t) {
         double sqrt05 = std::sqrt(0.5);
@@ -59,7 +59,7 @@ int main() {
 
     // --- Gear method of the 2nd order with RK4 start (numerical and accurate graph) ---
     RungeKutta4Solver rk4solver;
-    GearSolver gear2solver(2, &rk4solver);
+    GearBDFSolver gear2solver(2, &rk4solver);
     ODETask gear_task(gear2solver, &plot, 1);
     std::cout << "\nGear 2 (с RK4 стартом):\n";
     gear_task.run(ode_rhs, y0, t0, tn, h, U_exact);
