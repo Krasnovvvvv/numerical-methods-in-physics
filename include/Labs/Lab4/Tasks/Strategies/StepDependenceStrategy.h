@@ -100,13 +100,13 @@ public:
         }
 
         if (graphNumber == 1)
-            plotter->plot(all_xs, all_ys, all_labels, timeName, "Component");
+            plotter->plot(all_xs, all_ys, all_labels, timeName, "Ui");
         else if (graphNumber == 2)
-            plotter->plot(all_xs, all_ys, all_labels, timeName, "dComponent/dt");
+            plotter->plot(all_xs, all_ys, all_labels, timeName, "dUi/dt");
         else if (graphNumber == 3)
             plotter->plot(all_xs, all_ys, all_labels, timeName, "Euclidean Error");
         else if (graphNumber == 4)
-            plotter->plot(all_xs, all_ys, all_labels, "Phase X", "Phase Y");
+            plotter->plot(all_xs, all_ys, all_labels, "Ui", "Ui'");
     }
 
 private:
