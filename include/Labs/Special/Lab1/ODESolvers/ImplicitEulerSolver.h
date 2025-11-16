@@ -14,7 +14,7 @@ public:
     ODEResult solve(
         const std::function<std::vector<double>(double, const std::vector<double>&)>& func,
         std::vector<double> y0, double t0, double tn, double h,
-        double tol = 1e-8, int max_iter = 50
+        double tol = 1e-8
     ) override {
         ODEResult result;
         double time = t0;
@@ -32,7 +32,7 @@ public:
                 y_next[i] += h * k0[i];
 
             // the simplest iterations for searching y_{n+1} = y_n + h * f(t_{n+1}, y_{n+1})
-            for (int iter = 0; iter < max_iter; ++iter) {
+            for (int iter = 0; iter < 50; ++iter) {
                 auto k1 = func(next_time, y_next);
                 std::vector<double> y_new = state;
                 for (size_t i = 0; i < y_new.size(); ++i)
