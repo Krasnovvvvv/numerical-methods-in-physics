@@ -41,7 +41,7 @@ int main() {
         task2.run(rhs, y0, t0, tn, h, {y_exact, z_exact});
     }
 
-    // --- Investigation of decision behavior ---
+    // --- Investigation of solution behavior ---
     {
         tn = 0.01;
         StepDependenceStrategy strategy(&solver, {"y", "z"});
