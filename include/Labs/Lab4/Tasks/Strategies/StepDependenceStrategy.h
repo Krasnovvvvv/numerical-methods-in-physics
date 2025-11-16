@@ -11,11 +11,16 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <optional>
 
 class StepDependenceStrategy : public IODETaskStrategy {
 public:
     StepDependenceStrategy(IODESolver* solver, std::vector<std::string> comp_names = {}, std::string time_name = "t")
-        : solver_(solver), componentNames(std::move(comp_names)), timeName(std::move(time_name)) {}
+        : solver_(solver), componentNames(std::move(comp_names)), timeName(std::move(time_name)), referenceSolutions(std::nullopt) {}
+
+    void setReferenceSolutions(const std::vector<std::function<double(double)>>& refs) {
+        referenceSolutions = refs;
+    }
 
     void run(const std::function<std::vector<double>(double, const std::vector<double>&)>& rhs,
              const std::vector<double>& y0,
@@ -74,12 +79,31 @@ public:
             }
 
             if (graphNumber == 3) {
-                // Error
-                std::ostringstream oss;
-                oss << "Euclidean error, h=" << step;
-                all_xs.push_back(res.t);
-                all_ys.push_back(res.errorEstimates);
-                all_labels.push_back(oss.str());
+                // Euclidean error
+                if (referenceSolutions.has_value() && !referenceSolutions->empty()) {
+                    std::vector<double> euclid_errors(res.t.size(), NAN);
+                    for (size_t i = 0; i < res.t.size(); ++i) {
+                        double sum_sq = 0.0;
+                        for (size_t comp = 0; comp < dim && comp < referenceSolutions->size(); ++comp) {
+                            double val_num = res.y[i][comp];
+                            double val_ex = (*referenceSolutions)[comp](res.t[i]);
+                            double delta = val_num - val_ex;
+                            sum_sq += delta * delta;
+                        }
+                        euclid_errors[i] = std::sqrt(sum_sq);
+                    }
+                    std::ostringstream oss;
+                    oss << "Euclidean error, h=" << step;
+                    all_xs.push_back(res.t);
+                    all_ys.push_back(euclid_errors);
+                    all_labels.push_back(oss.str());
+                } else {
+                    std::ostringstream oss;
+                    oss << "Error estimate, h=" << step;
+                    all_xs.push_back(res.t);
+                    all_ys.push_back(res.errorEstimates);
+                    all_labels.push_back(oss.str());
+                }
             }
 
             if (graphNumber == 4) {
@@ -113,6 +137,7 @@ private:
     IODESolver* solver_;
     std::vector<std::string> componentNames;
     std::string timeName;
+    std::optional<std::vector<std::function<double(double)>>> referenceSolutions;
 };
 
 #endif //NUMERICAL_METHODS_IN_PHYSICS_STEPDEPENDENCESTRATEGY_H

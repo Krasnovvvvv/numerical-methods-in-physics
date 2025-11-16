@@ -26,7 +26,7 @@ int main() {
         special::ODETask task1(solver, &plotter, 1, {"y", "z"});
         task1.run(rhs, y0, t0, tn, h, {y_exact, z_exact});
 
-        // --- |y_exact - y_num| ---
+        // --- ||y_exact - y_num|| ---
         special::ODETask task2(solver, &plotter, 2, {"y", "z"});
         task2.run(rhs, y0, t0, tn, h, {y_exact, z_exact});
     }
@@ -35,6 +35,7 @@ int main() {
     {
         tn = 0.01;
         StepDependenceStrategy strategy(&solver, {"y", "z"});
+        strategy.setReferenceSolutions({y_exact, z_exact});
         std::vector<double> steps = {0.0005, 0.001, 0.002, 0.0025};
 
         // --- solutions for different h ---

@@ -1,5 +1,5 @@
 #ifndef NUMERICAL_METHODS_IN_PHYSICS_ODETASK_H
-#define NUMERICAL_METHODS_IN_PHYSICS_ODETASK_H
+#define NUMERIСAL_METHODS_IN_PHYSICS_ODETASK_H
 
 #pragma once
 #include "Base/IODESolver.h"
@@ -44,17 +44,32 @@ namespace special {
             std::cout << "Computation time: " << elapsed_us << " microseconds\n";
             std::cout << std::fixed << std::setprecision(7);
 
+            // --- Euclidean error for each time point ---
+            std::vector<double> euclid_errors(result.t.size(), NAN);
+            if (!exact_solutions.empty()) {
+                for (size_t i = 0; i < result.t.size(); ++i) {
+                    double sum_sq = 0.0;
+                    for (size_t comp = 0; comp < dim && comp < exact_solutions.size(); ++comp) {
+                        double val_num = result.y[i][comp];
+                        double val_ex  = exact_solutions[comp](result.t[i]);
+                        double delta = val_num - val_ex;
+                        sum_sq += delta * delta;
+                    }
+                    euclid_errors[i] = std::sqrt(sum_sq);
+                }
+            }
+
             for (size_t comp = 0; comp < dim; ++comp) {
-                std::string comp_name = (comp < componentNames.size()) ? componentNames[comp] :
-                ("U" + std::to_string(comp+1));
+                std::string comp_name = (comp < componentNames.size()) ?
+                componentNames[comp] : ("U" + std::to_string(comp+1));
                 std::cout << "\n--- " << comp_name << " ---\n";
                 std::cout << " t      | Num. U    | Error\n";
                 for (size_t i = 0; i < result.t.size(); ++i) {
                     double val_num = result.y[i][comp];
-                    double val_ex = (!exact_solutions.empty() && comp < exact_solutions.size())
-                    ? exact_solutions[comp](result.t[i]) : NAN;
-                    double err = (!exact_solutions.empty() && comp < exact_solutions.size())
-                    ? std::abs(val_num - val_ex) : NAN;
+                    double val_ex = (!exact_solutions.empty() && comp < exact_solutions.size()) ?
+                        exact_solutions[comp](result.t[i]) : NAN;
+                    double err = (!exact_solutions.empty() && comp < exact_solutions.size()) ?
+                        std::abs(val_num - val_ex) : NAN;
                     std::cout << std::setw(7) << result.t[i] << " | "
                               << std::setw(9) << val_num << " | "
                               << std::setw(9) << err << "\n";
@@ -64,7 +79,7 @@ namespace special {
             if (plotter) {
                 std::vector<double> x(result.t.begin(), result.t.end());
 
-                // Case 1: all numerics and all exacts together
+                // Case 1: all solutions and accurate on one graph
                 if (graphNumber == 1) {
                     std::vector<std::vector<double>> all_ys;
                     std::vector<std::string> labels;
@@ -96,23 +111,12 @@ namespace special {
                     plotter->plot(xs, all_ys, labels, timeName, "Components");
                 }
 
-                // Case 2: all error curves on one graph
+                // Case 2: graph of the Euclidean error rate
                 if (graphNumber == 2 && !exact_solutions.empty()) {
-                    std::vector<std::vector<double>> all_errors;
-                    std::vector<std::string> labels;
-                    for (size_t comp = 0; comp < dim; ++comp) {
-                        if (comp < exact_solutions.size()) {
-                            std::vector<double> err;
-                            for (size_t i = 0; i < result.t.size(); ++i)
-                                err.push_back(std::abs(result.y[i][comp] - exact_solutions[comp](result.t[i])));
-                            all_errors.push_back(err);
-                            std::string comp_name = (comp < componentNames.size())
-                            ? componentNames[comp] : ("U" + std::to_string(comp+1));
-                            labels.push_back("Error: " + comp_name + " by " + solver.name());
-                        }
-                    }
-                    std::vector<std::vector<double>> xs(all_errors.size(), x);
-                    plotter->plot(xs, all_errors, labels, timeName, "Error");
+                    std::vector<std::vector<double>> all_errors{euclid_errors};
+                    std::vector<std::string> labels{"Euclidean error by " + solver.name()};
+                    std::vector<std::vector<double>> xs{ x };
+                    plotter->plot(xs, all_errors, labels, timeName, "Euclidean Error");
                 }
             }
         }
@@ -125,4 +129,5 @@ namespace special {
         std::string timeName;
     };
 } // namespace special
+
 #endif // NUMERICAL_METHODS_IN_PHYSICS_ODETASK_H
