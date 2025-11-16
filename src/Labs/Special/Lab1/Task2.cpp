@@ -64,7 +64,7 @@ int main() {
         special::ODETask task1(solver1, &plot, 1, {"U"});
         task1.run(ode_rhs, y0, t0, tn, h, {U_exact});
 
-        // --- |y_exact - y_num| ---
+        // --- ||y_exact - y_num|| ---
         special::ODETask task2(solver1, &plot, 2, {"U"});
        task2.run(ode_rhs, y0, t0, tn, h, {U_exact});
     }
@@ -72,12 +72,15 @@ int main() {
     // --- ABM4: numerical and accurate, 1 correction ---
     std::cout << "\nAdams-Bashforth-Moulton 4 (1 correction):\n";
     {
-        AdamsMoulton4Solver abm4solver1(&rk4solver, 1);
-        special::ODETask abm_task1(abm4solver1, &plot, 1, {"U"});
-        abm_task1.run(ode_rhs, y0, t0, tn, h, {U_exact});
+        AdamsMoulton4Solver am4solver(&rk4solver, 1);
 
-        special::ODETask abm_task1_err(abm4solver1, &plot, 2, {"U"});
-        abm_task1_err.run(ode_rhs, y0, t0, tn, h, {U_exact});
+        // --- numeric vs analytic ---
+        special::ODETask am_task1(am4solver, &plot, 1, {"U"});
+        am_task1.run(ode_rhs, y0, t0, tn, h, {U_exact});
+
+        // --- ||y_exact - y_num|| ---
+        special::ODETask am_task2(am4solver, &plot, 2, {"U"});
+        am_task2.run(ode_rhs, y0, t0, tn, h, {U_exact});
     }
 
     // --- Investigation of the error dependence on the number of corrections ---
