@@ -2,6 +2,7 @@
 #include "Labs/Lab4/ODESolvers/RungeKutta4Solver.h"
 #include "Labs/Special/Lab1/ODESolvers/GearBDFSolver.h"
 #include "Labs/Special/Lab1/ODESolvers/AdamsMoulton4Solver.h"
+#include "Labs/Special/Lab1/ODEs/ODEs.h"
 #include "Helpers/Plotter.h"
 #include <cmath>
 #include <functional>
@@ -41,10 +42,6 @@ void run_corrections_sweep(
 
 int main() {
     // === The initial task ===
-    // U' = 1 + 0.5*U^2, U(0) = 0.5
-    auto ode_rhs = [](double t, const std::vector<double>& U) {
-        return std::vector<double>{ 1.0 + 0.5 * U[0] * U[0] };
-    };
     double U0 = 0.5;
     std::vector<double> y0 = {U0};
     double t0 = 0.0, tn = 0.1, h = 0.001;

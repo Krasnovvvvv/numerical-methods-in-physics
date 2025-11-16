@@ -1,26 +1,16 @@
 #include "Labs/Lab4/ODESolvers/EulerSolver.h"
 #include "Labs/Lab4/Tasks/Strategies/StepDependenceStrategy.h"
-#include "Helpers/Plotter.h"
 #include "Labs/Special/Lab1/Tasks/ODETask.h"
-
+#include "Labs/Special/Lab1/ODEs/ODEs.h"
+#include "Helpers/Plotter.h"
 
 // --- Exact solutions ---
-auto y_exact = [](double t) {
-    return 4 * std::exp(-t) - 3 * std::exp(-1000 * t);
-};
+auto y_exact = rigidSystem::rigidSystemYSolution;
 
-auto z_exact = [](double t) {
-    return -2 * std::exp(-t) + 3 * std::exp(-1000 * t);
-};
+auto z_exact = rigidSystem::rigidSystemZSolution;
 
 // --- System ---
-auto rhs = [](double t, const std::vector<double>& Y) {
-    double y = Y[0], z = Y[1];
-    return std::vector<double>{
-        998*y + 1998*z,
-        -999*y - 1999*z
-    };
-};
+auto rhs = rigidSystem::rigidSystem;
 
 int main() {
     std::vector<double> y0 = {1.0, 1.0}; // y(0) = 1, z(0) = 1
