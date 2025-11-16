@@ -4,10 +4,18 @@
 #pragma once
 #include "Base/IODESolver.h"
 #include "Labs/Lab4/Tasks/IODETaskStrategy.h"
+#include <vector>
+#include <string>
+#include <cmath>
+#include <stdexcept>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 
 class StepDependenceStrategy : public IODETaskStrategy {
 public:
-    StepDependenceStrategy(IODESolver* solver) : solver_(solver) {}
+    StepDependenceStrategy(IODESolver* solver, std::vector<std::string> comp_names = {}, std::string time_name = "t")
+        : solver_(solver), componentNames(std::move(comp_names)), timeName(std::move(time_name)) {}
 
     void run(const std::function<std::vector<double>(double, const std::vector<double>&)>& rhs,
              const std::vector<double>& y0,
@@ -22,34 +30,89 @@ public:
         if (!solver_ || !plotter) throw std::runtime_error("Solver or Plotter not set!");
         if (steps.empty()) throw std::invalid_argument("Steps vector is empty!");
 
-        std::vector<std::vector<double>> xs, ys;
-        std::vector<std::string> labels;
+        std::vector<std::vector<double>> all_xs, all_ys;
+        std::vector<std::string> all_labels;
 
         for (double step : steps) {
             auto res = solver_->solve(rhs, y0, t0, tn, step, tol);
+            size_t dim = res.y.empty() ? 0 : res.y[0].size();
 
-            std::vector<double> x, v;
-            for (const auto& state : res.y) {
-                x.push_back(state[0]);
-                v.push_back(state[1]);
+            std::vector<std::vector<double>> y_components(dim);
+            for (const auto& state : res.y)
+                for (size_t j = 0; j < dim; ++j)
+                    y_components[j].push_back(state[j]);
+
+            if (graphNumber == 1) {
+                // Solutions
+                for (size_t j = 0; j < dim; ++j) {
+                    std::string cname = (j < componentNames.size())
+                        ? componentNames[j] : ("U" + std::to_string(j+1));
+                    std::ostringstream oss;
+                    oss << cname << ", h=" << step;
+                    all_xs.push_back(res.t);
+                    all_ys.push_back(y_components[j]);
+                    all_labels.push_back(oss.str());
+                }
             }
 
-            switch (graphNumber) {
-                case 1: xs.push_back(res.t); ys.push_back(x); break;
-                case 2: xs.push_back(res.t); ys.push_back(v); break;
-                case 3: xs.push_back(res.t); ys.push_back(res.errorEstimates); break;
-                case 4: xs.push_back(x); ys.push_back(v); break;
-                default: break;
+            if (graphNumber == 2) {
+                // Derivations
+                for (size_t j = 0; j < dim; ++j) {
+                    std::vector<double> deriv, t_shifted;
+                    for (size_t i = 1; i < res.t.size(); ++i) {
+                        deriv.push_back((y_components[j][i] - y_components[j][i-1]) / (res.t[i] - res.t[i-1]));
+                        t_shifted.push_back(res.t[i]);
+                    }
+                    std::string cname = (j < componentNames.size())
+                        ? componentNames[j] : ("U" + std::to_string(j+1));
+                    std::ostringstream oss;
+                    oss << "d/dt(" << cname << "), h=" << step;
+                    all_xs.push_back(t_shifted);
+                    all_ys.push_back(deriv);
+                    all_labels.push_back(oss.str());
+                }
             }
-            labels.push_back("h = " + std::to_string(step));
+
+            if (graphNumber == 3) {
+                // Error
+                std::ostringstream oss;
+                oss << "Euclidean error, h=" << step;
+                all_xs.push_back(res.t);
+                all_ys.push_back(res.errorEstimates);
+                all_labels.push_back(oss.str());
+            }
+
+            if (graphNumber == 4) {
+                // Phase trajectories
+                for (size_t a = 0; a < dim; ++a) {
+                    for (size_t b = a+1; b < dim; ++b) {
+                        std::ostringstream oss;
+                        oss << ((a < componentNames.size()) ? componentNames[a] : ("U" + std::to_string(a+1)))
+                            << " vs "
+                            << ((b < componentNames.size()) ? componentNames[b] : ("U" + std::to_string(b+1)))
+                            << ", h=" << step;
+                        all_xs.push_back(y_components[a]);
+                        all_ys.push_back(y_components[b]);
+                        all_labels.push_back(oss.str());
+                    }
+                }
+            }
         }
-        plotter->plot(xs, ys, labels,
-            (graphNumber == 4 ? "x" : "t"),
-            (graphNumber == 4 ? "v" : (graphNumber == 1 ? "x" : graphNumber == 2 ? "v" : "error")));
+
+        if (graphNumber == 1)
+            plotter->plot(all_xs, all_ys, all_labels, timeName, "Component");
+        else if (graphNumber == 2)
+            plotter->plot(all_xs, all_ys, all_labels, timeName, "dComponent/dt");
+        else if (graphNumber == 3)
+            plotter->plot(all_xs, all_ys, all_labels, timeName, "Euclidean Error");
+        else if (graphNumber == 4)
+            plotter->plot(all_xs, all_ys, all_labels, "Phase X", "Phase Y");
     }
 
 private:
     IODESolver* solver_;
+    std::vector<std::string> componentNames;
+    std::string timeName;
 };
 
 #endif //NUMERICAL_METHODS_IN_PHYSICS_STEPDEPENDENCESTRATEGY_H
