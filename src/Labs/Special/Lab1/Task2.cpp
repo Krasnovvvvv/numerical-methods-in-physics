@@ -60,21 +60,21 @@ int main() {
     // --- Gear method of the 2nd order with RK4 start (numerical and accurate graph) ---
     RungeKutta4Solver rk4solver;
     GearBDFSolver gear2solver(2, &rk4solver);
-    ODETask gear_task(gear2solver, &plot, 1, {"U"});
+    special::ODETask gear_task(gear2solver, &plot, 1, {"U"});
     std::cout << "\nGear 2 (с RK4 стартом):\n";
     gear_task.run(ode_rhs, y0, t0, tn, h, {U_exact});
 
     // Gear2 errors
-    ODETask gear_task_err(gear2solver, &plot, 2, {"U"});
+    special::ODETask gear_task_err(gear2solver, &plot, 2, {"U"});
     gear_task_err.run(ode_rhs, y0, t0, tn, h, {U_exact});
 
     // --- ABM4: numerical and accurate, 1 correction ---
     AdamsMoulton4Solver abm4solver1(&rk4solver, 1);
-    ODETask abm_task1(abm4solver1, &plot, 1, {"U"});
+    special::ODETask abm_task1(abm4solver1, &plot, 1, {"U"});
     std::cout << "\nAdams-Bashforth-Moulton 4 (1 коррекция):\n";
     abm_task1.run(ode_rhs, y0, t0, tn, h, {U_exact});
 
-    ODETask abm_task1_err(abm4solver1, &plot, 2, {"U"});
+    special::ODETask abm_task1_err(abm4solver1, &plot, 2, {"U"});
     abm_task1_err.run(ode_rhs, y0, t0, tn, h, {U_exact});
 
     // ====== Investigation of the error dependence on the number of corrections ======
