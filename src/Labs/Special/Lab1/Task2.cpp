@@ -11,7 +11,7 @@
 void run_corrections_sweep(
     std::function<std::vector<double>(double, const std::vector<double>&)> func,
     std::vector<double> y0, double t0, double tn, double h,
-    std::function<double(double)> exact_sol,
+    std::vector<std::function<double(double)>> exact_sol,
     Plotter* plotter,
     int min_corr, int max_corr
 ) {
@@ -26,18 +26,24 @@ void run_corrections_sweep(
         std::vector<double> x, y_err;
         for (size_t i = 0; i < result.t.size(); ++i) {
             x.push_back(result.t[i]);
-            double exact = exact_sol ? exact_sol(result.t[i]) : NAN;
-            if (exact_sol)
-                y_err.push_back(std::abs(result.y[i][0] - exact));
+            if (!exact_sol.empty()) {
+                double sum_sq = 0.0;
+                size_t dim = result.y[i].size();
+                for (size_t j = 0; j < dim && j < exact_sol.size(); ++j) {
+                    double exact = exact_sol[j](result.t[i]);
+                    double diff = result.y[i][j] - exact;
+                    sum_sq += diff * diff;
+                }
+                y_err.push_back(std::sqrt(sum_sq));
+            }
         }
         xs.push_back(x);
         ys.push_back(y_err);
         labels.push_back("corr=" + std::to_string(corr));
-        std::cout << "Max error for " << corr << " corrections: "
+        std::cout << "Max Euclidean error for " << corr << " corrections: "
                   << (y_err.empty() ? 0.0 : *std::max_element(y_err.begin(), y_err.end())) << std::endl;
     }
-    // Draw all the errors on one graph
-    plotter->plot(xs, ys, labels, "t", "Error");
+    plotter->plot(xs, ys, labels, "t", "Euclidean Error");
 }
 
 int main() {
@@ -85,7 +91,7 @@ int main() {
 
     // --- Investigation of the error dependence on the number of corrections ---
     std::cout << "\nSweep by the number of correction iterations in ABM4:\n";
-    run_corrections_sweep(ode_rhs, y0, t0, tn, h, U_exact, &plot, 1, 5);
+    run_corrections_sweep(ode_rhs, y0, t0, tn, h, {U_exact}, &plot, 1, 5);
 
     // --- ADDITIONAL BLOCK: A Tough task ---
     std::cout << "\n=== A tough task for a correction test ===\n";
@@ -101,6 +107,6 @@ int main() {
 
         std::cout << "Sweep (corr=1..) for stiff problem, h=" << h_stiff << "\n";
         run_corrections_sweep(rhs_stiff, y0_stiff, t0_stiff, tn_stiff, h_stiff,
-            exact_stiff, &plot, 1, 10);
+            {exact_stiff}, &plot, 1, 10);
     }
 }
