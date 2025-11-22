@@ -37,6 +37,7 @@ public:
         B.setZero(dim);
 
         A(0, 0) = 1.0;
+        A(dim-1, dim-1) = 1.0;
         B[0] = u_a;
         B[dim - 1] = u_b;
 
@@ -68,7 +69,7 @@ public:
 
         std::cout << "--- The result of solving the Bessel " + std::to_string(order) + "order equation --- \n";
         std::cout << "Computation time: " << elapsed_us << " microseconds\n";
-        std::cout << std::fixed << std::setprecision(7);
+        std::cout << std::scientific;
         std::cout << "Residual: " << result.residual << "\n";
 
         if (plotter)
