@@ -18,12 +18,12 @@ jobs:
       - name: Install dependencies (vcpkg)
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgJsonGlob: '.github/vcpkg.json'
+          vcpkgJsonGlob: '**/vcpkg.json'
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           runVcpkgInstall: true
 
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_PREFIX_PATH="${{ github.workspace }}/vcpkg/installed/${{ runner.os == 'Windows' && 'x64-windows' || runner.os == 'Linux' && 'x64-linux' || 'x64-osx' }}/share"
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 
       - name: Build (Windows)
