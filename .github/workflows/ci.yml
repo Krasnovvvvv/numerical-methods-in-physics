@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies (vcpkg)
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgJsonGlob: '**/vcpkg.json'
+          vcpkgJsonGlob: '.github/vcpkg.json'
           vcpkgDirectory: '${{ github.workspace }}/vcpkg'
           runVcpkgInstall: true
 
