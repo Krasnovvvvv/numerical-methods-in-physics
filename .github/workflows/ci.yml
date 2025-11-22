@@ -23,7 +23,8 @@ jobs:
           runVcpkgInstall: true
 
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+        run: cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_PREFIX_PATH="${{ github.workspace }}/vcpkg/installed/${{ runner.os == 'Windows' && 'x64-windows' || runner.os == 'Linux' && 'x64-linux' || 'x64-osx' }}/share"
+
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
