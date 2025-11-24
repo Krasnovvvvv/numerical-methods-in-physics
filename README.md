@@ -58,6 +58,11 @@ Features various quadrature methods (rectangular, trapezoidal, Simpson's), with 
 
 Includes explicit and implicit schemes for ODEs, such as Euler, improved Euler and Runge-Kutta methods, tested on classical physical systems (oscillator, decay, etc.)
 
+### 🏁 Boundary Value Problems for ODEs
+
+Presents approaches for numerically solving ordinary differential equations with boundary conditions, including finite difference schemes, shooting methods, and matrix formulations. Analysis includes stability, convergence on heat conduction and physical diffusion models
+
+
 ---
 
 ## 🚀 Getting Started 
@@ -94,6 +99,7 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Root Finding Algorithms 📄               | [Read](reports/Lab2.md)       |
 | Integrating Algorithms 📄                | [Read](reports/Lab3.md)       |
 | Solving ODEs Algorithms 📄               | [Read](reports/Lab4.md)       |
+| Boundary Value Problems for ODEs 📄      | [Read](reports/Lab5.md)       |
 
 ---
 
