@@ -99,6 +99,7 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Root Finding Algorithms 📄               | [Read](reports/Lab2.md)       |
 | Integrating Algorithms 📄                | [Read](reports/Lab3.md)       |
 | Solving ODEs Algorithms 📄               | [Read](reports/Lab4.md)       |
+| Solving Rigid ODEs Algorithms 📄         | [Read](reports/Special/Lab1.md)|
 | Boundary Value Problems for ODEs 📄      | [Read](reports/Lab5.md)       |
 
 ---
