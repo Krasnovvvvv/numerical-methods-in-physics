@@ -1,6 +1,8 @@
+#define _USE_MATH_DEFINES
 #include "Labs/Lab1/SLAESolvers/ThomasSolver.h"
 #include "Labs/Lab6/Tasks/TaskHeatEquation.h"
 #include "Helpers/Plotter.h"
+#include <cmath>
 
 int main() {
     Plotter plotter;
