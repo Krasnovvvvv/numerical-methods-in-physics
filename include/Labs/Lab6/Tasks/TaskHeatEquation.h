@@ -76,7 +76,7 @@ public:
                     double uim1 = u(s,i-1);
                     double uip1 = u(s,i+1);
                     double lap  = uip1 - 2.0*ui + uim1;
-                    u(s+1,i) = ui - mu * lap + tau * f(x[i], ts);
+                    u(s+1,i) = ui + mu * lap + tau * f(x[i], ts);
                 }
             } else {
                 // θ‑схема (sigma=θ) для u_t = -kappa u_xx + f:
@@ -102,7 +102,7 @@ public:
                     double lap_n = uip1 - 2.0*ui + uim1;
 
                     // знак минус перед лапласианом
-                    double rhs = ui - (1.0 - sigma) * mu * lap_n + tau * f(x[i], ts);
+                    double rhs = ui + (1.0 - sigma) * mu * lap_n + tau * f(x[i], ts);
 
                     // учёт граничных значений на шаге n+1
                     if (i == 1) {
@@ -130,7 +130,7 @@ public:
 
         if (plotter) {
             // выбираем более «удачные» моменты времени (доли от tMax)
-            std::vector<double> rel_times = {0.0, 0.1, 1.0};
+            std::vector<double> rel_times = {0.1};
 
             // общий X для всех кривых
             std::vector<double> x_vec(nx);

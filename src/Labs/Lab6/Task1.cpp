@@ -8,7 +8,7 @@ int main() {
     Plotter plotter;
     ThomasSolver solver;
 
-    TaskHeatEquation task(solver, &plotter, 0.0);
+    TaskHeatEquation task(solver, &plotter, 0);
 
     auto f   = [](double, double){ return 0.0; };
     auto u0  = [](double x){ return std::sin(M_PI * x); };
@@ -19,7 +19,7 @@ int main() {
     };
 
     double kappa = 1.0, l = 1.0, tMax = 1.0;
-    int N = 1000, M = 1000;
+    int N = 100, M = 20000;
 
     task.run(kappa, l, tMax, N, M, f, u0, nu1, nu2, exact);
 
