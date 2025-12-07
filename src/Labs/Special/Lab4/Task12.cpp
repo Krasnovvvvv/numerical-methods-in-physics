@@ -5,6 +5,7 @@
 
 #include "../include/Labs/Lab3/IntegralSolvers/GaussSolver.h"
 #include "../include/Labs/Lab3/IntegralSolvers/TrapezoidSolver.h"
+#include "../include/Labs/Lab3/IntegralSolvers/SimpsonSolver.h"
 #include "../include/Labs/Special/Lab4/Tasks/IntegralEquationTask.h"
 #include "Helpers/Plotter.h"
 
@@ -53,7 +54,7 @@ void run_volterra_task(Plotter& plotter, unsigned short mode) {
     const std::size_t n =
         static_cast<std::size_t>((b - a) / tau) + 1;
 
-    TrapezoidSolver integrator;
+    SimpsonSolver integrator;
     IntegralEquationTask task(integrator, &plotter, mode);
 
     IntegralEquationTask::Kernel kernel = [](double t, double s) {
@@ -68,7 +69,7 @@ void run_volterra_task(Plotter& plotter, unsigned short mode) {
 
     auto x_num = task.solve_volterra(a, b, n, kernel, rhs, exact, 4.0);
 
-    std::cout << "\nVolterra solution on grid with step 0.25:\n";
+    std::cout << "\nVolterra solution on grid with step " + std::to_string(tau) + ":\n";
     for (std::size_t i = 0; i < x_num.size(); ++i) {
         double t  = a + tau * static_cast<double>(i);
         double xe = exact(t);
@@ -84,7 +85,7 @@ int main() {
     Plotter plotter;
 
     unsigned short mode = 1;
-    run_fredholm_task(plotter, mode);
+   run_fredholm_task(plotter, mode);
     run_volterra_task(plotter, mode);
 
 }
