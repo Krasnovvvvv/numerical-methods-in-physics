@@ -62,6 +62,9 @@ Includes explicit and implicit schemes for ODEs, such as Euler, improved Euler a
 
 Presents approaches for numerically solving ordinary differential equations with boundary conditions, including finite difference schemes, shooting methods, and matrix formulations. Analysis includes stability, convergence on heat conduction and physical diffusion models
 
+### ∫📈 Fredholm and Volterra Integral Equations
+
+Demonstrates numerical solution of linear Fredholm and Volterra integral equations of the second kind using quadrature-based methods (trapezoidal rule, Simpson’s rule, Gauss–Christoffel formulas) and piecewise-linear approximation of the unknown function on a grid, with analysis of how the choice of quadrature and mesh size affects accuracy, stability, and error propagation in test problems
 
 ---
 
@@ -101,6 +104,7 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Solving ODEs Algorithms 📄               | [Read](reports/Lab4.md)       |
 | Solving Rigid ODEs Algorithms 📄         | [Read](reports/Special/Lab1.md)|
 | Boundary Value Problems for ODEs 📄      | [Read](reports/Lab5.md)       |
+| Solving Integral Equations 📄            |[Read](reports/Special/Lab4.md)|
 
 ---
 
