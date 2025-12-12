@@ -30,7 +30,8 @@ protected:
 
     void visualize(const DiffusionResult& result,
                   const DiffusionParameters& params) override {
-        visualizer_.plot_trajectories(result, 20,
+        visualizer_.plot_time_sliced_histograms_with_theory(result, params, 4);
+        visualizer_.plot_trajectories(result, 5,
             "Particle trajectories (free diffusion)");
         visualizer_.compare_with_theory(result, params);
         visualizer_.plot_statistics(result, "Free Diffusion Statistics");

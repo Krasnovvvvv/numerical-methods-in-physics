@@ -235,6 +235,86 @@ public:
         }
     }
 
+void plot_time_sliced_histograms_with_theory(const DiffusionResult& result,
+                                             const DiffusionParameters& params,
+                                             int n_frames = 4,
+                                             int n_bins   = 50) const {
+    using namespace matplot;
+
+    if (result.trajectories.empty() || result.t.empty())
+        return;
+
+    const int n_particles = static_cast<int>(result.trajectories.size());
+    const int n_times     = static_cast<int>(result.t.size());
+    if (n_particles == 0 || n_times == 0)
+        return;
+
+    const int step = std::max(1, n_times / n_frames);
+    const double D  = params.diffusion_coeff;
+    const double x0 = params.x0;
+
+    // Увеличиваем окно, чтобы влезали подписи
+    auto f = figure();
+    f->size(900, 700);
+
+    for (int k = 0; k < n_frames; ++k) {
+        const int idx = std::min(k * step, n_times - 1);
+        double t = result.t[idx];
+        if (t <= 0.0)
+            t = std::max(params.dt, 1e-6);  // защита
+
+        // 1) координаты всех частиц в момент t_idx
+        std::vector<double> x_current;
+        x_current.reserve(n_particles);
+        for (int p = 0; p < n_particles; ++p)
+            x_current.push_back(result.trajectories[p][idx]);
+        if (x_current.empty())
+            continue;
+
+        // 2) подграфик 2×2
+        subplot(2, 2, k + 1);
+
+        // --- ЧИСЛЕННАЯ ГИСТОГРАММА КАК ПЛОТНОСТЬ (pdf) ---
+        auto h = hist(x_current, n_bins);
+        h->normalization(histogram::normalization::pdf);  // нормировка к плотности
+        h->face_color({0.8, 0.4, 0.2});
+        h->edge_color({0.4, 0.2, 0.1});
+
+        // Диапазон для теории: немного шире, чем данные
+        double x_min = *std::min_element(x_current.begin(), x_current.end());
+        double x_max = *std::max_element(x_current.begin(), x_current.end());
+        double span  = x_max - x_min;
+        double margin = 0.5 * (span > 0 ? span : 1.0);
+        x_min -= margin;
+        x_max += margin;
+
+        // 3) Теоретическая плотность p(x,t) с произвольным x0
+        //    p(x,t) = 1/sqrt(4πDt) * exp(-(x - x0)^2 / (4Dt))
+        const int n_theory = 400;
+        std::vector<double> x_th(n_theory), p_th(n_theory);
+        const double norm = 1.0 / std::sqrt(4.0 * M_PI * D * t);
+
+        for (int i = 0; i < n_theory; ++i) {
+            const double x = x_min + (x_max - x_min) * i / (n_theory - 1);
+            x_th[i] = x;
+            const double dx = x - x0;
+            p_th[i] = norm * std::exp(-dx * dx / (4.0 * D * t));
+        }
+
+        // 4) Рисуем теорию поверх гистограммы
+        hold(on);
+        plot(x_th, p_th, "-r")->line_width(2);
+        hold(off);
+
+        // 5) Подписи и оформление
+        xlabel("x");
+        ylabel("Плотность вероятности p(x,t)");
+        title("t = " + std::to_string(t));
+        grid(true);
+        //legend({"Численная гистограмма", "Теория p(x,t)"});
+    }
+}
+
 private:
     Plotter* plotter_;
 };
