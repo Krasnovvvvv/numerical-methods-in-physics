@@ -8,23 +8,28 @@
 
 #include <iostream>
 #include <string>
+#include <cmath>
+#include <windows.h>
 
 using namespace special;
 
 int main() {
+    SetConsoleOutputCP(65001);
     // ===== ИНИЦИАЛИЗАЦИЯ =====
-    Plotter plotter;  // ← ЗДЕСЬ СОЗДАЁМ PLOTTER!
+    Plotter plotter;
     LangevinSolver solver(42);
 
-    DiffusionParameters params;
-    params.L = 1.0;
-    params.dt = 0.001;
-    params.n_particles = 1000;
-    params.x0 = 0.0;
-    params.use_periodic_bc = false;
-    params.x_min = -10.0;
-    params.x_max = 10.0;
-    params.overdamped = true;
+    DiffusionParameters base;
+    base.L              = 1.0;
+    base.dt             = 0.001;
+    base.n_particles    = 1000;
+    base.x0             = 0.0;
+    base.use_periodic_bc = false;
+    base.x_min          = -10.0;
+    base.x_max          = 10.0;
+    base.overdamped     = true;
+    base.diffusion_coeff = 0.1;
+    base.kB_T           = 1.0;
 
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "СТОХАСТИЧЕСКАЯ ДИНАМИКА: ЗАДАЧИ 1-5\n";
@@ -34,68 +39,74 @@ int main() {
     // ЗАДАЧА 1: СВОБОДНАЯ ДИФФУЗИЯ
     // =========================================================================
     {
-        DiffusionParameters p1 = params;
-        p1.diffusion_coeff = 0.1;
-        p1.kB_T = 1.0;
+        DiffusionParameters p1 = base;
         p1.n_steps = 20000;
 
-        FreeDiffusion task1(solver, &plotter, 1, "Free Diffusion");
+        FreeDiffusion task1(solver, &plotter, 1, "Task 1: Free diffusion");
         task1.run(p1);
     }
 
     // =========================================================================
-    // ЗАДАЧА 2: АНАЛИЗ МОМЕНТОВ
+    // ЗАДАЧА 2: АНАЛИЗ МОМЕНТОВ (N = 20)
     // =========================================================================
     {
-        DiffusionParameters p2 = params;
-        p2.diffusion_coeff = 0.1;
-        p2.kB_T = 1.0;
-        p2.n_steps = 20;
+        DiffusionParameters p2 = base;
+        p2.n_steps     = 20;
         p2.n_particles = 1000;
 
-        MomentsAnalysis task2(solver, &plotter, 2, "Moments Analysis");
+        MomentsAnalysis task2(solver, &plotter, 2, "Task 2: Moments");
         task2.run(p2);
     }
 
     // =========================================================================
-    // ЗАДАЧА 3: ДИФФУЗИЯ В ПОТЕНЦИАЛЕ
+    // ЗАДАЧА 3: (уже покрыта визуализацией в задаче 1 — распределения с теорией)
+    // =========================================================================
+
+    // =========================================================================
+    // ЗАДАЧА 4: СТАЦИОНАРНАЯ ОДНОРОДНАЯ СИЛА  F(x,t) = F
     // =========================================================================
     {
-        DiffusionParameters p3 = params;
-        p3.diffusion_coeff = 0.1;
-        p3.kB_T = 1.0;
-        p3.n_steps = 50000;
+        DiffusionParameters p4 = base;
+        p4.n_steps        = 20000;
+        p4.constant_force = 5;
 
-        DiffusionInPotential task3(solver, &plotter, 3, "Diffusion in Potential");
-        task3.run(p3);
-    }
-
-    // =========================================================================
-    // ЗАДАЧА 4: МИГАЮЩИЙ РАЧЕТ
-    // =========================================================================
-    {
-        DiffusionParameters p4 = params;
-        p4.diffusion_coeff = 0.05;
-        p4.kB_T = 1.0;
-        p4.n_steps = 50000;
-        p4.use_periodic_bc = true;
-
-        RatchetFlashing task4(solver, &plotter, 4, "Flashing Ratchet");
+        ConstantForceDiffusion task4(
+            solver, &plotter, 4, "Task 4: constant force");
         task4.run(p4);
     }
 
+    // Параметры периодического потенциала для задач 5A и 5B
+    double V0 = 1.0;
+    double Lp = 2.0 * M_PI;
+    double F  = 0.5;
+
     // =========================================================================
-    // ЗАДАЧА 5: НАКЛОННЫЙ РАЧЕТ
+    // ЗАДАЧА 5A: ДИФФУЗИЯ В СТАЦИОНАРНОМ ПЕРИОДИЧЕСКОМ ПОТЕНЦИАЛЕ
+    // U(x) = V0 sin(2π x / L)
     // =========================================================================
     {
-        DiffusionParameters p5 = params;
-        p5.diffusion_coeff = 0.05;
-        p5.kB_T = 1.0;
-        p5.n_steps = 50000;
-        p5.use_periodic_bc = true;
+        DiffusionParameters p5a = base;
+        p5a.n_steps        = 50000;
+        p5a.use_periodic_bc = true;
 
-        RatchetTilting task5(solver, &plotter, 5, "Tilting Ratchet");
-        task5.run(p5);
+        PeriodicPotentialDiffusion task5a(
+            solver, &plotter, 5, "Task 5A: periodic potential", V0, Lp);
+        task5a.run(p5a);
+    }
+
+    // =========================================================================
+    // ЗАДАЧА 5B: ТОТ ЖЕ ПЕРИОДИЧЕСКИЙ ПОТЕНЦИАЛ ПОД ДЕЙСТВИЕМ ПОСТОЯННОЙ СИЛЫ
+    // U(x) = V0 sin(2π x / L) - F x
+    // =========================================================================
+    {
+        DiffusionParameters p5b = base;
+        p5b.n_steps        = 50000;
+        p5b.use_periodic_bc = true;
+
+        PeriodicPotentialWithForce task5b(
+            solver, &plotter, 6, "Task 5B: periodic + constant force",
+            V0, Lp, F);
+        task5b.run(p5b);
     }
 
     std::cout << "\n" << std::string(70, '=') << "\n";
