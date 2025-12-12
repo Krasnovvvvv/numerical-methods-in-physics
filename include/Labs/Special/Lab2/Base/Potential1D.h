@@ -61,6 +61,30 @@ public:
 private:
     DiffusionParameters params_;
 };
+/**
+* @class ConstantForcePotential
+* @brief Постоянная сила:  F(x,t) = F = const
+*/
+class ConstantForcePotential : public Potential1D {
+public:
+    explicit ConstantForcePotential(double F)
+        : F_(F) {}
+
+    double U(double x, double /*t*/) const override {
+        return -F_ * x;
+    }
+
+    double F(double /*x*/, double /*t*/) const override {
+        return F_;
+    }
+
+    std::string name() const override {
+        return "ConstantForce";
+    }
+
+private:
+    double F_;
+};
 
 /**
  * @class HarmonicPotential
