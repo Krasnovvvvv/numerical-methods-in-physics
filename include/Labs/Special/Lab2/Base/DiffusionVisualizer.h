@@ -255,7 +255,7 @@ void plot_time_sliced_histograms_with_theory(const DiffusionResult& result,
 
     // Увеличиваем окно, чтобы влезали подписи
     auto f = figure();
-    f->size(900, 700);
+    f->size(1400, 1400);
 
     for (int k = 0; k < n_frames; ++k) {
         const int idx = std::min(k * step, n_times - 1);

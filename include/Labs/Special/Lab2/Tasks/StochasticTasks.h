@@ -105,6 +105,9 @@ namespace special {
             visualizer_.plot_potential(
                 pot, params, "U(x) = -F x (constant force)");
 
+            visualizer_.plot_time_sliced_histograms_with_theory(
+                result, params, 4, 50);
+
             visualizer_.plot_trajectories(
                 result, 10, "Trajectories with constant force");
 
@@ -118,7 +121,7 @@ namespace special {
 
     // ============================================================================
     // ЗАДАЧА 5A: ПЕРИОДИЧЕСКИЙ ПОТЕНЦИАЛ
-    // U(x) = V(x) = V0 sin(2π x / L)
+    // U(x) = V0 * sin²(πx/L)
     // ============================================================================
 
     class PeriodicPotentialDiffusion : public StochasticTask {
@@ -213,6 +216,58 @@ namespace special {
         double L_;
         double F_static_;
     };
+
+// ============================================================================
+// ЗАДАЧА 5C: РАЧЕТ С ПУТЕШЕСТВУЮЩЕЙ ВОЛНОЙ
+// U(x,t) = V0 * sin^2[π (x - v t) / L]
+// ============================================================================
+
+class TravelingWaveRatchet : public StochasticTask {
+public:
+    TravelingWaveRatchet(BaseDiffusionSolver& solver,
+                         Plotter* plotter,
+                         unsigned short task_id,
+                         const std::string& task_name,
+                         double V0,
+                         double L)
+        : StochasticTask(solver, plotter, task_id, task_name)
+        , V0_(V0)
+        , L_(L)
+        , visualizer_(plotter) {}
+
+protected:
+    std::unique_ptr<Potential1D> create_potential(
+            const DiffusionParameters& params) override {
+        // Путешествующая синус^2‑волна с амплитудой V0, периодом L и скоростью v
+        return std::make_unique<TravelingWavePotential>(V0_, L_, params.traveling_wave_speed);
+    }
+
+    void visualize(const DiffusionResult& result,
+                   const DiffusionParameters& params) override {
+
+        TravelingWavePotential pot(V0_, L_, params.traveling_wave_speed);
+
+        visualizer_.plot_potential(
+            pot, params, "Traveling-wave ratchet: U(x, t=0)");
+
+        visualizer_.plot_trajectories(
+            result, 10, "Trajectories in traveling-wave ratchet");
+
+        visualizer_.plot_statistics(
+            result, "Statistics in traveling-wave ratchet");
+    }
+
+    void postprocess(const DiffusionResult& result,
+                     const DiffusionParameters& params) override {
+        print_statistics(result, params);
+    }
+
+private:
+    double V0_;
+    double L_;
+    DiffusionVisualizer visualizer_;
+};
+
 
 } // namespace special
 

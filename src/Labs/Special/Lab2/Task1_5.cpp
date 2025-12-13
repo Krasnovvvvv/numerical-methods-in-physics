@@ -109,6 +109,32 @@ int main() {
         task5b.run(p5b);
     }
 
+    // =========================================================================
+    // ЗАДАЧА 5С: Бегущий потенциал
+    // U(x,t) = V0 * sin^2[π (x - v t) / L]
+    // =========================================================================
+    {
+        DiffusionParameters p5c = base;
+        p5c.diffusion_coeff  = 0.05;
+        p5c.kB_T             = 1.0;
+        p5c.n_steps          = 30000;
+        p5c.use_periodic_bc  = true;
+        p5c.traveling_wave_speed = 2.5;
+
+        // Параметры потенциала
+        double V0 = 4.0;           // амплитуда барьеров
+        double L  = 1.0;           // период по x
+
+        TravelingWaveRatchet task5c(
+            solver,
+            &plotter,
+            6,
+            "Traveling-wave ratchet",
+            V0, L);
+
+        task5c.run(p5c);
+    }
+
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "✓ ALL TASKS COMPLETED SUCCESSFULLY!\n";
     std::cout << std::string(70, '=') << "\n\n";
