@@ -9,12 +9,19 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <clocale>
 #include <windows.h>
 
 using namespace special;
 
 int main() {
+    setlocale(LC_ALL, "");
+#ifdef _WIN32
+#include <windows.h>
     SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+#endif
+
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     Plotter plotter;
     LangevinSolver solver(42);
