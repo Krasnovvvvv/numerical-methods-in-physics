@@ -10,7 +10,6 @@
 #include <string>
 #include <cmath>
 #include <clocale>
-#include <windows.h>
 
 using namespace special;
 
