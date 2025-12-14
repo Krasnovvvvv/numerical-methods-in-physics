@@ -42,6 +42,6 @@ function(add_lab lab_number)
 endfunction()
 
 
-add_lab(2 ON)
+add_lab(6)
 
 
