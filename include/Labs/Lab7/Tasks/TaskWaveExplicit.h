@@ -7,8 +7,9 @@
 
 class TaskWaveExplicit : public TaskWaveBase {
 public:
-    explicit TaskWaveExplicit(Plotter* plotter = nullptr)
-        : TaskWaveBase(plotter)
+    explicit TaskWaveExplicit(Plotter* plotter = nullptr,
+                              ExactFunc exact = nullptr)
+        : TaskWaveBase(plotter, exact)
     {}
 
 protected:
@@ -45,17 +46,15 @@ protected:
             double xi  = i * h_eff;
             double psi = 0.0;
             if (xi >= xi0 - d_xi && xi <= xi0 + d_xi)
-                psi = 1.0;     // θ_τ = 1 на ударном отрезке
-            theta(1, i) = tau_eff * psi; // y^1
+                psi = 1.0;
+            theta(1, i) = tau_eff * psi;
         }
 
-        // жестко закрепленные концы
         theta(0, 0)    = 0.0;
         theta(0, nx-1) = 0.0;
         theta(1, 0)    = 0.0;
         theta(1, nx-1) = 0.0;
 
-        // временной цикл: схема "крест"
         for (int s = 1; s < nt - 1; ++s) {
             for (int i = 1; i < nx - 1; ++i) {
                 double yim1 = theta(s, i - 1);
@@ -69,7 +68,6 @@ protected:
             theta(s + 1, nx-1) = 0.0;
         }
 
-        // перевод θ -> u в размерных переменных
         double U0 = physParams.v0 * physParams.L / physParams.c;
         for (int s = 0; s < nt; ++s)
             for (int i = 0; i < nx; ++i)
