@@ -11,7 +11,6 @@
 #include <memory>
 #include <iostream>
 #include <iomanip>
-#include <cmath>
 
 namespace special {
 
