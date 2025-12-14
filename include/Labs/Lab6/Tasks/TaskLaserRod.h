@@ -121,7 +121,7 @@ public:
             // -θ_ξ(0,τ) = β e^{-τ}
             // -(-3θ0 + 4θ1 - θ2)/(2h) = β e^{-τ_{s+1}}
             double tau_sp1 = (s + 1) * tau_eff;
-            double g_sp1   = beta * std::exp(-tau_sp1);
+            double g_sp1 = beta * tau_sp1 * std::exp(-tau_sp1);
 
             {
                 int row = 0;
