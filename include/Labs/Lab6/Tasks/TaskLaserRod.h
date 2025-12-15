@@ -123,6 +123,7 @@ public:
             double tau_sp1 = (s + 1) * tau_eff;
             double g_sp1   = beta * tau_sp1 * std::exp(-tau_sp1);
 
+
             int rowL = 0;
             A(rowL, 0) = -1.0;
             A(rowL, 1) =  1.0;
