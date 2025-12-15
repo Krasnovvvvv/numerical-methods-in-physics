@@ -9,10 +9,10 @@ int main() {
     TaskLaserRod::PhysParams phys {
         .rho = 8000.0,
         .c   = 500.0,
-        .k   = 50.0,
+        .k   = 30.0,
         .l   = 0.01,
-        .tp  = 0.01,
-        .I0  = 1.0e5,
+        .tp  = 0.015,
+        .I0  = 3.0e5,
         .T0  = 300.0
     };
 
