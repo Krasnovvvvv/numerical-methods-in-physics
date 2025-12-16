@@ -4,75 +4,87 @@
 #pragma once
 
 #include "TaskWaveBase.h"
+#include <cmath>
+#include <iostream>
 
 class TaskWaveExplicit : public TaskWaveBase {
 public:
     explicit TaskWaveExplicit(Plotter* plotter = nullptr,
-                              ExactFunc exact = nullptr)
+                             ExactFunc exact = nullptr)
         : TaskWaveBase(plotter, exact)
     {}
 
 protected:
     const char* schemeName() const override {
-        return "Explicit cross scheme";
+        return "Explicit cross scheme (sigma=0)";
     }
 
-    void solveND(double tMax_nd,
-                 double h_nd,
-                 double tau_nd,
+    void solveND(double /*tMax*/,
+                 double h_x,
+                 double tau_t,
                  int N,
                  int M) override
     {
-        int nx = N + 1;
-        int nt = M + 1;
+        const int nx = N + 1;
+        const int nt = M + 1;
 
-        double lambda = tau_nd / h_nd;
+        // lambda = c * tau / h
+        const double lambda = physParams.c * tau_t / h_x;
+        const double lambda2 = lambda * lambda;
+
         if (lambda > 1.0) {
-            std::cout << "[TaskWaveExplicit] Warning: CFL violated, lambda = "
-                      << lambda << " > 1 (scheme may be unstable)\n";
+            std::cout << "[TaskWaveExplicit] WARNING: CFL violated, lambda = "
+                      << lambda << " > 1\n";
         }
 
-        Eigen::MatrixXd theta(nt, nx);
-        theta.setZero();
+        Eigen::MatrixXd y(nt, nx);
+        y.setZero();
 
-        double xi0  = physParams.x0    / physParams.L;
-        double d_xi = physParams.delta / physParams.L;
-
-        double h_eff   = 1.0 / N;
-        double tau_eff = tMax_nd / M;
-        lambda = tau_eff / h_eff;
+        // ---- Начальные условия ----
+        // u(x,0) = 0
+        // u_t(x,0) = v0 * chi_{[x0-d, x0+d]}(x)
+        //
+        // На сетке первый слой по времени:
+        // y^1_i = tau * u_t(x_i, 0) = tau * v0 * chi_i
 
         for (int i = 0; i < nx; ++i) {
-            double xi  = i * h_eff;
-            double psi = 0.0;
-            if (xi >= xi0 - d_xi && xi <= xi0 + d_xi)
-                psi = 1.0;
-            theta(1, i) = tau_eff * psi;
+            double x_i = i * h_x;
+            double chi = 0.0;
+            if (x_i >= physParams.x0 - physParams.delta &&
+                x_i <= physParams.x0 + physParams.delta)
+                chi = 1.0;
+
+            y(1, i) = tau_t * physParams.v0 * chi;
         }
 
-        theta(0, 0)    = 0.0;
-        theta(0, nx-1) = 0.0;
-        theta(1, 0)    = 0.0;
-        theta(1, nx-1) = 0.0;
+        // Граничные условия Дирихле: y = 0 на концах
+        y(0, 0)      = 0.0;
+        y(0, nx - 1) = 0.0;
+        y(1, 0)      = 0.0;
+        y(1, nx - 1) = 0.0;
+
+        // ---- Явная схема "крест" ----
+        // y^{s+1}_i = lambda^2 * (y^s_{i+1} - 2*y^s_i + y^s_{i-1})
+        //             + 2*y^s_i - y^{s-1}_i
 
         for (int s = 1; s < nt - 1; ++s) {
             for (int i = 1; i < nx - 1; ++i) {
-                double yim1 = theta(s, i - 1);
-                double yi   = theta(s, i);
-                double yip1 = theta(s, i + 1);
+                double y_sp = y(s,     i);
+                double y_sm = y(s - 1, i);
+                double y_ip = y(s, i + 1);
+                double y_im = y(s, i - 1);
 
-                theta(s + 1, i) = 2.0 * yi - theta(s - 1, i)
-                                  + lambda * lambda * (yip1 - 2.0 * yi + yim1);
+                y(s + 1, i) = lambda2 * (y_ip - 2.0 * y_sp + y_im)
+                            + 2.0 * y_sp - y_sm;
             }
-            theta(s + 1, 0)    = 0.0;
-            theta(s + 1, nx-1) = 0.0;
+
+            // Граничные условия
+            y(s + 1, 0)      = 0.0;
+            y(s + 1, nx - 1) = 0.0;
         }
 
-        double U0 = physParams.v0 * physParams.L / physParams.c;
-        for (int s = 0; s < nt; ++s)
-            for (int i = 0; i < nx; ++i)
-                u(s, i) = U0 * theta(s, i);
+        u = y;
     }
 };
 
-#endif // NUMERICAL_METHODS_IN_PHYSICS_TASKWAVEEXPLICIT_H
+#endif
