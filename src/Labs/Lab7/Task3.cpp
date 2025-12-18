@@ -7,7 +7,6 @@
 #include "Labs/Lab7/Tasks/TaskWaveBase.h"
 #include "Labs/Lab7/Tasks/TaskWaveWeighted.h"
 #include "Labs/Lab7/ExactSolutions/ExactWaveSolutions.h"
-#include "Helpers/FFT1D.h"
 #include "Labs/Lab7/Analysis/WaveSpectrumAnalyzer.h"
 
 TaskWaveBase::ExactFunc exact =
@@ -23,7 +22,7 @@ int main() {
         .L     = 1.0,
         .x0    = 0.3,
         .delta = 0.05,
-        .v0    = 25
+        .v0    = 1.0
     };
 
     double tMax = 0.05;
@@ -39,7 +38,7 @@ int main() {
 
     WaveSpectrumAnalyzer analyzer(&plotter);
 
-    int s_mid = static_cast<int>(taskW.getTime().size()) / 4;
+    int s_mid = static_cast<int>(taskW.getTime().size()) / 2;
 
     analyzer.analyzeAtTime(taskW, s_mid);
 }
