@@ -32,7 +32,7 @@ int main() {
     double tau_stable = 0.5 * h_x / phys.c;
     std::cout << "\nCase 1: Stable (lambda = 0.5, CFL satisfied)\n";
 
-    TaskWaveExplicit taskStable(&plotter, exact);
+    TaskWaveExplicit taskStable(&plotter, exact, TaskWaveBase::PLOT_ERROR);
     taskStable.run(phys, tMax, h_x, tau_stable);
 
     // Нестабильный случай
