@@ -4,10 +4,17 @@
 #include "Labs/Special/Lab2/Tasks/DichotomousRatchetTasks.h"
 #include "Labs/Special/Lab2/DiffusionSolvers/LangevinSolver.h"
 #include "Labs/Special/Lab2/Base/DiffusionVisualizer.h"
+#include <clocale>
 
 using namespace special;
 
 int main() {
+    setlocale(LC_ALL, "");
+#ifdef _WIN32
+#include <windows.h>
+    SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+#endif
     std::cout << "\n" << std::string(80, '=') << "\n";
     std::cout << "FULL LABORATORY WORK: DICHOTOMIC RATCHET\n";
     std::cout << "Parts 1 & 2: Noise Generation and Ratchet Dynamics\n";
@@ -52,7 +59,7 @@ int main() {
         NoiseGenerationTask task1(solver, &plotter, 1,
                                  "Noise Generation");
         task1.run(params_noise);
-    }
+    }/*
 
     // Задание 3: Проверка алгоритма (вычисление моментов)
     {
@@ -117,5 +124,5 @@ int main() {
     std::cout << "  - Task 2B: Trajectories, mean position, statistics\n";
     std::cout << "  - Task 2V*: Data file for external plotting\n";
 
-    return 0;
+    return 0;*/
 }
