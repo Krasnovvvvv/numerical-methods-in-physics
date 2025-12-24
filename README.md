@@ -66,9 +66,17 @@ Presents approaches for numerically solving ordinary differential equations with
 
 Demonstrates numerical solution of linear Fredholm and Volterra integral equations of the second kind using quadrature-based methods (trapezoidal rule, Simpson’s rule, Gauss–Christoffel formulas) and piecewise-linear approximation of the unknown function on a grid, with analysis of how the choice of quadrature and mesh size affects accuracy, stability, and error propagation in test problems
 
+### 🔥 Parabolic PDEs: Heat Equation and Difference Schemes
+
+Studies numerical solution of 1D heat‑conduction boundary‑value problems using finite‑difference schemes on uniform space–time grids. Implements explicit, implicit, and weighted (θ‑method) schemes for the heat equation with various boundary conditions, and compares temperature profiles and error behaviour for different time and space steps to analyse stability limits, numerical diffusion, and the influence of the weighting parameter on accuracy
+
 ### 🌊 Convection Equations: Explicit and Implicit Schemes
 
 Demonstrates numerical solution of the 1D linear convection equation with prescribed and periodic boundary conditions using explicit and implicit finite‑difference schemes of first and second order (FTCS, first‑ and second‑order upwind, Lax–Wendroff, MacCormack, Richtmyer two‑step, BTCS). Compares numerical and exact solutions and visualizes the maximum error in time to study how the Courant number, stencil choice, and approximation order affect stability, numerical diffusion, dispersion, and long‑time error growth
+
+### 📡 Hyperbolic PDEs: Wave Equation and Weighted Schemes
+
+Demonstrates numerical solution of the 1D wave equation with source term and given initial and boundary conditions using finite‑difference methods on uniform space–time grids. Implements the explicit second‑order “cross” scheme and a weighted scheme, and compares their stability and accuracy by varying time and space steps, visualizing wave propagation, reflection from boundaries, and analysing how the choice of weights affects numerical dispersion and error growth
 
 ---
 
@@ -109,7 +117,9 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Solving Rigid ODEs Algorithms 📄         | [Read](reports/Special/Lab1.md)|
 | Boundary Value Problems for ODEs 📄      | [Read](reports/Lab5.md)       |
 | Solving Integral Equations 📄            |[Read](reports/Special/Lab4.md)|
+| Solving Heat Equation 📄                 |[Read](reports/Lab6.md)        |
 | Solving Convection Equations 📄          |[Read](reports/Special/Lab3.md)|
+| Solving 1D Wave Equation 📄              |[Read](reports/Lab7.md)        |
 
 ---
 
