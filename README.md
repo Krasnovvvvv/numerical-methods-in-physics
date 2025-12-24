@@ -66,6 +66,10 @@ Presents approaches for numerically solving ordinary differential equations with
 
 Demonstrates numerical solution of linear Fredholm and Volterra integral equations of the second kind using quadrature-based methods (trapezoidal rule, Simpson’s rule, Gauss–Christoffel formulas) and piecewise-linear approximation of the unknown function on a grid, with analysis of how the choice of quadrature and mesh size affects accuracy, stability, and error propagation in test problems
 
+### 🌊 Convection Equations: Explicit and Implicit Schemes
+
+Demonstrates numerical solution of the 1D linear convection equation with prescribed and periodic boundary conditions using explicit and implicit finite‑difference schemes of first and second order (FTCS, first‑ and second‑order upwind, Lax–Wendroff, MacCormack, Richtmyer two‑step, BTCS). Compares numerical and exact solutions and visualizes the maximum error in time to study how the Courant number, stencil choice, and approximation order affect stability, numerical diffusion, dispersion, and long‑time error growth
+
 ---
 
 ## 🚀 Getting Started 
@@ -105,6 +109,7 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Solving Rigid ODEs Algorithms 📄         | [Read](reports/Special/Lab1.md)|
 | Boundary Value Problems for ODEs 📄      | [Read](reports/Lab5.md)       |
 | Solving Integral Equations 📄            |[Read](reports/Special/Lab4.md)|
+| Solving Convection Equations 📄          |[Read](reports/Special/Lab3.md)|
 
 ---
 
