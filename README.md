@@ -117,7 +117,7 @@ All completed laboratory reports (including results, and code descriptions) can 
 | Solving Rigid ODEs Algorithms 📄         | [Read](reports/Special/Lab1.md)|
 | Boundary Value Problems for ODEs 📄      | [Read](reports/Lab5.md)       |
 | Solving Integral Equations 📄            |[Read](reports/Special/Lab4.md)|
-| Solving Heat Equation 📄                 |[Read](reports/Lab6.md)        |
+| Solving 1D Heat Equation 📄              |[Read](reports/Lab6.md)        |
 | Solving Convection Equations 📄          |[Read](reports/Special/Lab3.md)|
 | Solving 1D Wave Equation 📄              |[Read](reports/Lab7.md)        |
 
