@@ -72,7 +72,7 @@ Studies numerical solution of 1D heat‑conduction boundary‑value problems usi
 
 ### 🌊 Convection Equations: Explicit and Implicit Schemes
 
-Demonstrates numerical solution of the 1D linear convection equation with prescribed and periodic boundary conditions using explicit and implicit finite‑difference schemes of first and second order (FTCS, first‑ and second‑order upwind, Lax–Wendroff, MacCormack, Richtmyer two‑step, BTCS). Compares numerical and exact solutions and visualizes the maximum error in time to study how the Courant number, stencil choice, and approximation order affect stability, numerical diffusion, dispersion, and long‑time error growth
+Demonstrates numerical solution of the 1D linear convection equation with prescribed and periodic boundary conditions using explicit and implicit finite‑difference schemes of first and second order (FTCS, first‑ and second‑order upwind, Lax–Wendroff, MacCormack, Richtmyer, BTCS). Compares numerical and exact solutions and visualizes the maximum error in time to study how the Courant number, stencil choice, and approximation order affect stability, numerical diffusion, dispersion, and long‑time error growth
 
 ### 📡 Hyperbolic PDEs: Wave Equation and Weighted Schemes
 
