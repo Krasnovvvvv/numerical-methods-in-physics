@@ -42,7 +42,7 @@ public:
         std::cout << "Parameters: a = 1, b = -1, τ_C = 0.05, 0.4\n\n";
 
         run_symmetric_noise(0.05);
-        run_symmetric_noise(0.4);
+        /*run_symmetric_noise(0.4);
 
         // ЗАДАНИЕ 2: асимметричный шум
         std::cout << "\n\nPART 1, SUBTASK 2): Asymmetric noise (a = -b, γ_a ≠ γ_b)\n";
@@ -51,7 +51,7 @@ public:
         run_asymmetric_noise(0.05);
         run_asymmetric_noise(0.4);
 
-        std::cout << "\n✓ All noise generation tasks completed\n";
+        std::cout << "\n✓ All noise generation tasks completed\n";*/
     }
 
 protected:
@@ -66,11 +66,23 @@ protected:
         DichotomousNoiseGenerator gen(1.0, -1.0, gamma_a, gamma_b);
 
         double dt = tau_c / 20.0;
-        int n_steps = static_cast<int>(10.0 / dt);
+        int n_steps = 10e6;
 
         std::cout << "Generated: dt = " << dt << ", n_steps = " << n_steps;
 
         auto sigma = gen.generate(dt, n_steps);
+
+        std::vector<double> t(sigma.size());
+        for (size_t i = 0; i < t.size(); ++i)
+            t[i] = i * dt;
+
+        /*if (plotter_) {
+            plotter_->plot(
+                t, sigma,
+                "Symmetric noise: tau_c = " + std::to_string(tau_c),
+                "t", "sigma(t)"
+            );
+        }*/
 
         double mean = gen.mean(sigma);
         double m2 = gen.second_moment(sigma);
@@ -117,6 +129,18 @@ protected:
         std::cout << "Generated: dt = " << dt << ", n_steps = " << n_steps;
 
         auto sigma = gen.generate(dt, n_steps);
+
+        std::vector<double> t(sigma.size());
+        for (size_t i = 0; i < t.size(); ++i)
+            t[i] = i * dt;
+
+        if (plotter_) {
+            plotter_->plot(
+                t, sigma,
+                "Asymmetric noise: tau_c = " + std::to_string(tau_c),
+                "t", "sigma(t)"
+            );
+        }
 
         double mean = gen.mean(sigma);
         double m2 = gen.second_moment(sigma);
