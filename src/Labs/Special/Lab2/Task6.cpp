@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Labs/Special/Additional/DichotomicNoise.h"
+#include "Labs/Special/Additional/NoiseGenerator/DichotomicNoise.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif

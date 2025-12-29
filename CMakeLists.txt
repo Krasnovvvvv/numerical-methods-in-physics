@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(Matplot++ CONFIG REQUIRED)
+find_package(OpenMP REQUIRED)
+
 
 add_library(Labs INTERFACE)
 
@@ -13,6 +15,10 @@ target_link_libraries(Labs INTERFACE
         Eigen3::Eigen
         Matplot++::cimg
         Matplot++::matplot)
+
+if (OpenMP_CXX_FOUND)
+    target_link_libraries(Labs INTERFACE OpenMP::OpenMP_CXX)
+endif()
 
 file(GLOB_RECURSE LAB_COMMON_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")

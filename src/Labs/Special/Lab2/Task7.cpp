@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Labs/Special/Additional/DichotomicNoise.h"
+#include "Labs/Special/Additional/NoiseGenerator/DichotomicNoise.h"
 #include "Helpers/Plotter.h"
 
 int main() {
