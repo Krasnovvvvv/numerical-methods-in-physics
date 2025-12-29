@@ -190,7 +190,6 @@ public:
             double sum_x2 = 0.0;
 
             // Шаг интегрирования для каждой частицы
-#pragma omp parallel for reduction(+:sum_x, sum_x2)
             for (std::size_t p = 0; p < n_particles; ++p) {
                 // Каждой частице свой гауссовский шум
                 double zeta_n = gaussian_(rng_);
