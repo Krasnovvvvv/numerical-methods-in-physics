@@ -24,7 +24,7 @@ private:
     // V'(x) для асимметричного потенциала (задания B, C, G)
     static auto getDVdxAsymmetric() {
         return [](double x) -> double {
-            return std::cos(2.0 * M_PI * x) + 0.5 * std::cos(4.0 * M_PI * x);
+            return -1.0*(std::cos(2.0 * M_PI * x) + 0.5 * std::cos(4.0 * M_PI * x));
         };
     }
 
@@ -45,7 +45,7 @@ public:
 
         double a = 1.0;
         double tau_c = 0.05;
-        std::size_t n_particles = 1000;
+        std::size_t n_particles = 500;
 
         std::vector<double> V0_vals = {0.5, 1.0, 2.0};
         std::vector<std::vector<double>> t_vecs;
@@ -104,7 +104,7 @@ public:
 
         double a = 1.0;
         double tau_c = 0.40;
-        std::size_t n_particles = 1000;
+        std::size_t n_particles = 500;
 
         std::vector<double> V0_vals = {0.5, 1.0, 2.0};
         std::vector<std::vector<double>> t_vecs;
@@ -163,7 +163,7 @@ public:
 
         double a = 1.0;
         double V0 = 1.0;
-        std::size_t n_particles = 1000;
+        std::size_t n_particles = 300;
 
         std::vector<double> tau_c_vals = {
             0.005, 0.01, 0.02, 0.05, 0.1,
@@ -208,10 +208,9 @@ public:
         std::cout << " Асимметричный дихотомный шум (±1, gamma_a != gamma_b)\n";
         std::cout << "───────────────────────────────────────────────────────────\n";
 
-        double gamma_a = 0.8;
         double gamma_b = 0.2;
-        double V0 = 1.0;
-        std::size_t n_particles = 1000;
+        double V0 = 0.5;
+        std::size_t n_particles = 500;
 
         std::vector<double> epsilon_vals = {0.0, 0.1, 0.5, 1.0};
         std::vector<double> v_mean_vals;
@@ -234,7 +233,8 @@ public:
                 LangevinSolver::ModulationType::EPSILON_PLUS_DICHOTOM, 400
             );
 
-            DichotomicNoise noise(+1.0, -1.0, gamma_a, gamma_b, dt);
+            DichotomicNoise noise =
+                DichotomicNoise::ZeroMeanAsymmetric(2.0, -1.0, gamma_b, dt, 400);
             auto res = solver.solve_ensemble(noise, N, n_particles, 0.0, epsilon, burn_in);
 
             v_mean_vals.push_back(res.mean_velocity);

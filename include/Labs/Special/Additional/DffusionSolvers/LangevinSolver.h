@@ -161,7 +161,7 @@ public:
                                           double epsilon = 0.0,
                                           std::size_t burn_in = 0)
     {
-        // Генерируем ДИП один раз для всех частиц!
+
         auto dichotom_profile = noise.generate(N, 0, true);
 
         LangevinEnsembleResult res;
