@@ -44,7 +44,7 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double tau_c = 0.05;
+        double tau_c = 0.4;
         std::size_t n_particles = 500;
 
         std::vector<double> V0_vals = {0.5, 1.0, 2.0};
@@ -64,8 +64,15 @@ public:
                 LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 42
             );
 
-            DichotomicNoise noise(a, tau_c, dt);
-            auto res = solver.solve_ensemble(noise, N, n_particles, 0.0, 0.0, burn_in);
+            // Создаём вектор независимых дихотомных шумов
+            std::vector<DichotomicNoise> noises;
+            noises.reserve(n_particles);
+            for (std::size_t p = 0; p < n_particles; ++p) {
+                noises.emplace_back(a, tau_c, dt,
+                                   42u + static_cast<unsigned int>(p));
+            }
+
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in);
 
             std::vector<double> t_cut, x_cut;
             for (std::size_t i = 0; i < res.t.size(); ++i) {
@@ -103,10 +110,10 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double tau_c = 0.40;
-        std::size_t n_particles = 500;
+        double tau_c = 15.0;
+        std::size_t n_particles = 10000;
 
-        std::vector<double> V0_vals = {0.5, 1.0, 2.0};
+        std::vector<double> V0_vals = {0.5};
         std::vector<std::vector<double>> t_vecs;
         std::vector<std::vector<double>> x_vecs;
         std::vector<std::string> labels;
@@ -126,8 +133,15 @@ public:
                 LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 200
             );
 
-            DichotomicNoise noise(a, tau_c, dt);
-            auto res = solver.solve_ensemble(noise, N, n_particles, 0.0, 0.0, burn_in);
+            // Вектор независимых шумов
+            std::vector<DichotomicNoise> noises;
+            noises.reserve(n_particles);
+            for (std::size_t p = 0; p < n_particles; ++p) {
+                noises.emplace_back(a, tau_c, dt,
+                                   200u + static_cast<unsigned int>(p));
+            }
+
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in);
 
             std::vector<double> t_cut, x_cut;
             for (std::size_t i = 0; i < res.t.size(); ++i) {
@@ -163,11 +177,10 @@ public:
 
         double a = 1.0;
         double V0 = 1.0;
-        std::size_t n_particles = 300;
+        std::size_t n_particles = 10000;
 
         std::vector<double> tau_c_vals = {
-            0.005, 0.01, 0.02, 0.05, 0.1,
-            0.2, 0.5, 1.0, 2.0, 5.0
+             5, 10, 12, 14, 16, 18
         };
 
         std::vector<double> inv_tau_c_vals;
@@ -184,8 +197,15 @@ public:
                 LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 300
             );
 
-            DichotomicNoise noise(a, tau_c, dt);
-            auto res = solver.solve_ensemble(noise, N, n_particles, 0.0, 0.0, burn_in);
+            // Вектор независимых шумов
+            std::vector<DichotomicNoise> noises;
+            noises.reserve(n_particles);
+            for (std::size_t p = 0; p < n_particles; ++p) {
+                noises.emplace_back(a, tau_c, dt,
+                                   300u + static_cast<unsigned int>(p));
+            }
+
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in);
 
             double inv_tau_c = 1.0 / tau_c;
             inv_tau_c_vals.push_back(inv_tau_c);
@@ -208,9 +228,9 @@ public:
         std::cout << " Асимметричный дихотомный шум (±1, gamma_a != gamma_b)\n";
         std::cout << "───────────────────────────────────────────────────────────\n";
 
-        double gamma_b = 0.2;
-        double V0 = 0.5;
-        std::size_t n_particles = 500;
+        double gamma_b = 8;
+        double V0 = 1.0;
+        std::size_t n_particles = 10000;
 
         std::vector<double> epsilon_vals = {0.0, 0.1, 0.5, 1.0};
         std::vector<double> v_mean_vals;
@@ -233,9 +253,17 @@ public:
                 LangevinSolver::ModulationType::EPSILON_PLUS_DICHOTOM, 400
             );
 
-            DichotomicNoise noise =
-                DichotomicNoise::ZeroMeanAsymmetric(2.0, -1.0, gamma_b, dt, 400);
-            auto res = solver.solve_ensemble(noise, N, n_particles, 0.0, epsilon, burn_in);
+            // Вектор независимых шумов для каждой частицы
+            std::vector<DichotomicNoise> noises;
+            noises.reserve(n_particles);
+            for (std::size_t p = 0; p < n_particles; ++p) {
+                noises.push_back(
+                    DichotomicNoise::ZeroMeanAsymmetric(2.0, -1.0, gamma_b, dt,
+                                                       400u + static_cast<unsigned int>(p))
+                );
+            }
+
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, epsilon, burn_in);
 
             v_mean_vals.push_back(res.mean_velocity);
             D_eff_vals.push_back(res.diffusion_coeff);

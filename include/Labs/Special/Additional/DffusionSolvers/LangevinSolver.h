@@ -151,9 +151,6 @@ public:
         return res;
     }
 
-    // ========================================================================
-    // НОВЫЙ метод: ансамбль из n_particles частиц в ОДНОМ общем шуме
-    // ========================================================================
     LangevinEnsembleResult solve_ensemble(DichotomicNoise& noise,
                                           std::size_t N,
                                           std::size_t n_particles,
@@ -252,6 +249,148 @@ public:
 
         return res;
     }
+
+
+LangevinEnsembleResult solve_ensemble_independent(
+    std::vector<DichotomicNoise>& noises,  // один DichotomicNoise на каждую частицу
+    std::size_t N,
+    std::size_t n_particles,
+    double x0 = 0.0,
+    double epsilon = 0.0,
+    std::size_t burn_in = 0)
+{
+    // Сгенерировать дихотомные последовательности для каждой частицы
+    std::vector<DichotomicProfile> dichotom_profiles;
+    dichotom_profiles.reserve(n_particles);
+    for (std::size_t p = 0; p < n_particles; ++p) {
+        dichotom_profiles.push_back(noises[p].generate(N, 0, true));
+    }
+
+    LangevinEnsembleResult res;
+    res.t.resize(N);
+    res.mean_x.resize(N);
+    res.mean_x2.resize(N);
+    res.L = L_;
+    res.n_particles = n_particles;
+
+    // Массив частиц: x[p] — позиция частицы p
+    std::vector<double> x(n_particles, 0.0);
+    for (auto& xi : x) {
+        xi = std::fmod(x0, L_);
+        if (xi < 0.0) xi += L_;
+    }
+
+    // Интегрирование: каждая частица в своём шуме σ_p(t)
+    for (std::size_t n = 0; n < N; ++n) {
+        res.t[n] = static_cast<double>(n) * dt_;
+
+        double sum_x = 0.0;
+        double sum_x2 = 0.0;
+
+        // Шаг интегрирования для каждой частицы
+        for (std::size_t p = 0; p < n_particles; ++p) {
+            double sigma_n = dichotom_profiles[p].s[n];  // шум для частицы p
+            double f_t = compute_f_t(sigma_n, epsilon);
+
+            double zeta_n = gaussian_(rng_);
+            double dVdx_n = dVdx_(x[p]);
+            double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
+            x[p] += dxdt * dt_;
+
+            // Периодические ГУ
+            x[p] = std::fmod(x[p], L_);
+            if (x[p] < 0.0) x[p] += L_;
+
+            sum_x += x[p];
+            sum_x2 += x[p] * x[p];
+        }
+
+        res.mean_x[n] = sum_x / static_cast<double>(n_particles);
+        res.mean_x2[n] = sum_x2 / static_cast<double>(n_particles);
+    }
+
+    if (burn_in > N) burn_in = N;
+
+    // <v> = < Δx > / t_measure, где Δx — смещение каждой частицы за время
+    double t_max = (N - burn_in) * dt_;
+    if (N > burn_in && t_max > 0.0) {
+
+        std::vector<double> displacements(n_particles, 0.0);
+
+        // Переинтегрируем
+        std::vector<double> x_burn(n_particles, 0.0);
+        for (auto& xi : x_burn) {
+            xi = std::fmod(x0, L_);
+            if (xi < 0.0) xi += L_;
+        }
+
+        // Эволюция до burn_in
+        for (std::size_t n = 0; n < burn_in; ++n) {
+            for (std::size_t p = 0; p < n_particles; ++p) {
+                double sigma_n = dichotom_profiles[p].s[n];
+                double f_t = compute_f_t(sigma_n, epsilon);
+                double zeta_n = gaussian_(rng_);
+                double dVdx_n = dVdx_(x_burn[p]);
+                double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
+                x_burn[p] += dxdt * dt_;
+                x_burn[p] = std::fmod(x_burn[p], L_);
+                if (x_burn[p] < 0.0) x_burn[p] += L_;
+            }
+        }
+
+        // Измерение смещений от burn_in
+        std::vector<double> x_start = x_burn;
+        for (std::size_t n = burn_in; n < N; ++n) {
+            for (std::size_t p = 0; p < n_particles; ++p) {
+                double sigma_n = dichotom_profiles[p].s[n];
+                double f_t = compute_f_t(sigma_n, epsilon);
+                double zeta_n = gaussian_(rng_);
+                double dVdx_n = dVdx_(x_burn[p]);
+                double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
+                x_burn[p] += dxdt * dt_;
+                x_burn[p] = std::fmod(x_burn[p], L_);
+                if (x_burn[p] < 0.0) x_burn[p] += L_;
+            }
+        }
+
+        // Вычисляем смещение для каждой частицы
+        double sum_all_displacements = 0.0;
+        for (std::size_t p = 0; p < n_particles; ++p) {
+            double dx = x_burn[p] - x_start[p];
+            // Коррекция на периодичность
+            if (dx > L_ / 2.0) dx -= L_;
+            if (dx < -L_ / 2.0) dx += L_;
+            sum_all_displacements += dx;
+        }
+
+        // Средняя скорость: среднее смещение / время
+        res.mean_velocity = sum_all_displacements / (static_cast<double>(n_particles) * t_max);
+    } else {
+        res.mean_velocity = 0.0;
+    }
+
+    // === Коэффициент диффузии (после burn_in) ===
+    if (N > burn_in + 1) {
+        double sum_msd = 0.0;
+        std::size_t cnt = 0;
+
+        for (std::size_t n = burn_in + 1; n < N; ++n) {
+            double dmean_x = res.mean_x[n] - res.mean_x[n - 1];
+            if (dmean_x > L_ / 2.0) dmean_x -= L_;
+            if (dmean_x < -L_ / 2.0) dmean_x += L_;
+
+            sum_msd += dmean_x * dmean_x;
+            ++cnt;
+        }
+
+        double mean_msd = sum_msd / static_cast<double>(cnt);
+        res.diffusion_coeff = mean_msd / (2.0 * dt_);
+    } else {
+        res.diffusion_coeff = 0.0;
+    }
+
+    return res;
+}
 
     // геттеры
     double L() const { return L_; }
