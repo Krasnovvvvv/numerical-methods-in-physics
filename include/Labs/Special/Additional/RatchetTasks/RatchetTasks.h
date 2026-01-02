@@ -174,9 +174,9 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double V0 = 1.0;
-        std::size_t n_particles = 1000;
-        std::vector<double> tau_c_vals = {0.05, 0.1, 0.15, 0.25, 0.4, 0.65, 1.05, 1.7, 2.75, 4.45, 5.5, 7.2, 10.0};
+        double V0 = 2.5;
+        std::size_t n_particles = 10000;
+        std::vector<double> tau_c_vals = {0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.15, 0.2, 0.3, 0.5, 0.8};
         std::vector<double> inv_tau_c_vals;
         std::vector<double> v_mean_vals;
 
