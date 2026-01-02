@@ -1,10 +1,12 @@
 #ifndef NUMERICAL_METHODS_IN_PHYSICS_DICHOTOMICNOISE_H
 #define NUMERICAL_METHODS_IN_PHYSICS_DICHOTOMICNOISE_H
+
 #pragma once
-#include <vector>
-#include <random>
+
 #include <cmath>
+#include <random>
 #include <stdexcept>
+#include <vector>
 
 struct DichotomicProfile {
     std::vector<double> t;
@@ -39,14 +41,13 @@ public:
           uni_(0.0, 1.0)
     {
         if (tau_c_ <= 0.0) throw std::invalid_argument("tau_c must be > 0");
-        if (dt_    <= 0.0) throw std::invalid_argument("dt must be > 0");
-        if (a_    == 0.0) throw std::invalid_argument("a must be != 0");
-
+        if (dt_ <= 0.0) throw std::invalid_argument("dt must be > 0");
+        if (a_ == 0.0) throw std::invalid_argument("a must be != 0");
         const double Gamma = 1.0 / tau_c_;
         gamma_a_ = 0.5 * Gamma;
         gamma_b_ = 0.5 * Gamma;
-
         init_transition_probs();
+        init_state();
     }
 
     /**
@@ -64,12 +65,10 @@ public:
         }
 
         double gamma_a = -(a / b) * gamma_b;
-
         if (gamma_a <= 0.0) {
             throw std::invalid_argument(
                 "With given a and b, computed gamma_a < 0. "
-                "Try: a and b with opposite signs."
-            );
+                "Try: a and b with opposite signs.");
         }
 
         DichotomicNoise gen(a, b, gamma_a, gamma_b, dt, seed);
@@ -100,17 +99,37 @@ public:
             throw std::invalid_argument("gamma_a and gamma_b must be > 0");
         if (dt_ <= 0.0)
             throw std::invalid_argument("dt must be > 0");
-
         init_transition_probs();
+        init_state();
     }
 
+    /**
+     * Один шаг интегрирования: обновляет внутреннее состояние и возвращает текущее значение σ
+     */
+    double step() {
+        double r = uni_(rng_);
+        if (sigma_current_ == a_) {
+            if (r > P_aa_) {
+                sigma_current_ = b_;
+            }
+        } else {
+            if (r > P_bb_) {
+                sigma_current_ = a_;
+            }
+        }
+        return sigma_current_;
+    }
+
+    /**
+     * Сгенерировать полный профиль (для анализа статистики)
+     */
     DichotomicProfile generate(std::size_t N,
                                std::size_t burn_in = 0,
                                bool start_from_stationary = true)
     {
         DichotomicProfile res;
-        res.t.resize(N);
-        res.s.resize(N);
+        res.t.reserve(N);
+        res.s.reserve(N);
         res.tau_c = tau_c_;
 
         // Выбор начального состояния
@@ -126,28 +145,24 @@ public:
 
         // Генерирование траектории
         for (std::size_t n = 0; n < N; ++n) {
-            res.t[n] = static_cast<double>(n) * dt_;
-            res.s[n] = sigma;
+            res.t.push_back(static_cast<double>(n) * dt_);
+            res.s.push_back(sigma);
 
-            // Марковский переход:
-            // Если в состоянии a: переходим в b с вероятностью 1 - exp(-gamma_a * dt)
-            // Если в состоянии b: переходим в a с вероятностью 1 - exp(-gamma_b * dt)
+            // Марковский переход
             double r = uni_(rng_);
             if (sigma == a_) {
-                // P(a->b) = 1 - P(a->a) = 1 - exp(-gamma_a*dt)
                 if (r > P_aa_) {
                     sigma = b_;
                 }
             } else {
-                // P(b->a) = 1 - P(b->b) = 1 - exp(-gamma_b*dt)
                 if (r > P_bb_) {
                     sigma = a_;
                 }
             }
         }
 
+        // Статистика после burn_in
         if (burn_in > N) burn_in = N;
-
         double sum1 = 0.0, sum2 = 0.0;
         std::size_t cnt = 0;
         for (std::size_t n = burn_in; n < N; ++n) {
@@ -173,19 +188,18 @@ public:
     }
 
     std::vector<double> autocorr_normalized(const std::vector<double>& s,
-                                        std::size_t max_lag) const {
-        // предполагаем <sigma> ~ 0
+                                            std::size_t max_lag) const
+    {
+        // предполагаем ~ 0
         std::size_t N = s.size();
         if (max_lag >= N) max_lag = N - 1;
 
-        // <sigma^2>
         double m2 = 0.0;
         for (double v : s) m2 += v * v;
         m2 /= static_cast<double>(N);
-        if (m2 == 0.0) return std::vector<double>(max_lag+1, 0.0);
+        if (m2 == 0.0) return std::vector<double>(max_lag + 1, 0.0);
 
         std::vector<double> C(max_lag + 1);
-
         C[0] = 1.0;
 
         for (std::size_t k = 1; k <= max_lag; ++k) {
@@ -194,9 +208,11 @@ public:
             for (std::size_t n = 0; n < cnt; ++n) {
                 sum += s[n] * s[n + k];
             }
+
             double ck = sum / static_cast<double>(cnt);
             C[k] = ck / m2;
         }
+
         return C;
     }
 
@@ -225,16 +241,22 @@ private:
     double gamma_a_, gamma_b_;
     double tau_c_, dt_;
     Mode mode_;
-
-    double P_aa_;  // P(a->a) = exp(-gamma_a * dt)
-    double P_bb_;  // P(b->b) = exp(-gamma_b * dt)
-
+    double P_aa_; // P(a->a) = exp(-gamma_a * dt)
+    double P_bb_; // P(b->b) = exp(-gamma_b * dt)
+    double sigma_current_; // текущее состояние для on-the-fly генерации
     std::mt19937 rng_;
     std::uniform_real_distribution<double> uni_;
 
     void init_transition_probs() {
         P_aa_ = std::exp(-gamma_a_ * dt_);
         P_bb_ = std::exp(-gamma_b_ * dt_);
+    }
+
+    void init_state() {
+        double Gamma = gamma_a_ + gamma_b_;
+        double P_a_stat = gamma_b_ / Gamma;
+        double r0 = uni_(rng_);
+        sigma_current_ = (r0 < P_a_stat) ? a_ : b_;
     }
 };
 

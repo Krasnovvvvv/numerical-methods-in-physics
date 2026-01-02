@@ -3,28 +3,32 @@
 
 #pragma once
 
-#include <vector>
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include <iomanip>
+#include <vector>
 #include <string>
 #include "Labs/Special/Additional/DffusionSolvers/LangevinSolver.h"
 #include "Labs/Special/Additional/NoiseGenerator/DichotomicNoise.h"
 #include "Helpers/Plotter.h"
 
 class RatchetTasks {
-
 private:
+    // Предвычисленные константы для потенциалов
+    static constexpr double TWO_PI = 2.0 * M_PI;
+    static constexpr double FOUR_PI = 4.0 * M_PI;
+
     // V'(x) для симметричного потенциала (задание A)
     static auto getDVdxSymmetric() {
         return [](double x) -> double {
-            return std::cos(2.0 * M_PI * x);
+            return std::cos(TWO_PI * x);
         };
     }
 
     // V'(x) для асимметричного потенциала (задания B, C, G)
     static auto getDVdxAsymmetric() {
         return [](double x) -> double {
-            return -1.0*(std::cos(2.0 * M_PI * x) + 0.5 * std::cos(4.0 * M_PI * x));
+            return -(std::cos(TWO_PI * x) + 0.5 * std::cos(FOUR_PI * x));
         };
     }
 
@@ -46,7 +50,6 @@ public:
         double a = 1.0;
         double tau_c = 0.4;
         std::size_t n_particles = 500;
-
         std::vector<double> V0_vals = {0.5, 1.0, 2.0};
         std::vector<std::vector<double>> t_vecs;
         std::vector<std::vector<double>> x_vecs;
@@ -61,21 +64,19 @@ public:
         for (double V0 : V0_vals) {
             LangevinSolver solver(
                 getDVdxSymmetric(), V0, L, dt,
-                LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 42
-            );
+                LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 42);
 
             // Создаём вектор независимых дихотомных шумов
             std::vector<DichotomicNoise> noises;
             noises.reserve(n_particles);
             for (std::size_t p = 0; p < n_particles; ++p) {
-                noises.emplace_back(a, tau_c, dt,
-                                   42u + static_cast<unsigned int>(p));
+                noises.emplace_back(a, tau_c, dt, 42u + static_cast<unsigned int>(p));
             }
 
-            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in);
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in, true);
 
             std::vector<double> t_cut, x_cut;
-            for (std::size_t i = 0; i < res.t.size(); ++i) {
+            for (std::size_t i = 0; i < res.mean_x.size(); ++i) {
                 double t = res.t[i];
                 if (t < T_plot_start) continue;
                 if (t > T_plot_end) break;
@@ -95,7 +96,7 @@ public:
         }
 
         Plotter plotter;
-        plotter.plot(t_vecs, x_vecs, labels, "t", "<x(t)>");
+        plotter.plot(t_vecs, x_vecs, labels, "t", "");
         std::cout << "✓ График x(t) (A) отрисован!\n";
     }
 
@@ -110,9 +111,8 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double tau_c = 15.0;
-        std::size_t n_particles = 10000;
-
+        double tau_c = 1.5;
+        std::size_t n_particles = 100;
         std::vector<double> V0_vals = {0.5};
         std::vector<std::vector<double>> t_vecs;
         std::vector<std::vector<double>> x_vecs;
@@ -124,27 +124,25 @@ public:
         double T_plot_start = t_burn;
         double T_plot_end = t_burn + T_window;
 
-        std::cout << "V₀\t\t<v>\n";
+        std::cout << "V₀\t\t\n";
         std::cout << "─────────────────────────────────────\n";
 
         for (double V0 : V0_vals) {
             LangevinSolver solver(
                 getDVdxAsymmetric(), V0, L, dt,
-                LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 200
-            );
+                LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 200);
 
             // Вектор независимых шумов
             std::vector<DichotomicNoise> noises;
             noises.reserve(n_particles);
             for (std::size_t p = 0; p < n_particles; ++p) {
-                noises.emplace_back(a, tau_c, dt,
-                                   200u + static_cast<unsigned int>(p));
+                noises.emplace_back(a, tau_c, dt, 200u + static_cast<unsigned int>(p));
             }
 
-            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in);
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in, true);
 
             std::vector<double> t_cut, x_cut;
-            for (std::size_t i = 0; i < res.t.size(); ++i) {
+            for (std::size_t i = 0; i < res.mean_x.size(); ++i) {
                 double t = res.t[i];
                 if (t < T_plot_start) continue;
                 if (t > T_plot_end) break;
@@ -162,7 +160,7 @@ public:
         }
 
         Plotter plotter;
-        plotter.plot(t_vecs, x_vecs, labels, "t", "<x(t)>");
+        plotter.plot(t_vecs, x_vecs, labels, "t", "");
         std::cout << "✓ График x(t) (B) отрисован!\n";
     }
 
@@ -177,35 +175,30 @@ public:
 
         double a = 1.0;
         double V0 = 1.0;
-        std::size_t n_particles = 10000;
-
-        std::vector<double> tau_c_vals = {
-             5, 10, 12, 14, 16, 18
-        };
-
+        std::size_t n_particles = 1000;
+        std::vector<double> tau_c_vals = {0.05, 0.1, 0.15, 0.25, 0.4, 0.65, 1.05, 1.7, 2.75, 4.45, 5.5, 7.2, 10.0};
         std::vector<double> inv_tau_c_vals;
         std::vector<double> v_mean_vals;
 
         std::size_t burn_in = choose_burn_in(N);
 
-        std::cout << "τ_c\t\t1/τ_c\t\t<v>\n";
-        std::cout << "──────────────────────────────────────────\n";
+        std::cout << "τ_c\t\t1/τ_c\t\t\n";
+        std::cout << "──────────────────────────────────────────────\n";
 
         for (double tau_c : tau_c_vals) {
             LangevinSolver solver(
                 getDVdxAsymmetric(), V0, L, dt,
-                LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 300
-            );
+                LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 300);
 
             // Вектор независимых шумов
             std::vector<DichotomicNoise> noises;
             noises.reserve(n_particles);
             for (std::size_t p = 0; p < n_particles; ++p) {
-                noises.emplace_back(a, tau_c, dt,
-                                   300u + static_cast<unsigned int>(p));
+                noises.emplace_back(a, tau_c, dt, 300u + static_cast<unsigned int>(p));
             }
 
-            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, 0.0, burn_in);
+            auto res = solver.solve_ensemble_independent(noises,
+                N, n_particles, 0.0, 0.0, burn_in, true);
 
             double inv_tau_c = 1.0 / tau_c;
             inv_tau_c_vals.push_back(inv_tau_c);
@@ -231,7 +224,6 @@ public:
         double gamma_b = 8;
         double V0 = 1.0;
         std::size_t n_particles = 10000;
-
         std::vector<double> epsilon_vals = {0.0, 0.1, 0.5, 1.0};
         std::vector<double> v_mean_vals;
         std::vector<double> D_eff_vals;
@@ -242,7 +234,7 @@ public:
         double T_plot_start = t_burn;
         double T_plot_end = t_burn + T_window;
 
-        std::cout << "ε\t\t<v>\t\tD_eff\n";
+        std::cout << "ε\t\t\t\tD_eff\n";
         std::cout << "────────────────────────────────────────────────\n";
 
         std::vector<double> t_demo, x_demo;
@@ -250,8 +242,7 @@ public:
         for (double epsilon : epsilon_vals) {
             LangevinSolver solver(
                 getDVdxAsymmetric(), V0, L, dt,
-                LangevinSolver::ModulationType::EPSILON_PLUS_DICHOTOM, 400
-            );
+                LangevinSolver::ModulationType::EPSILON_PLUS_DICHOTOM, 400);
 
             // Вектор независимых шумов для каждой частицы
             std::vector<DichotomicNoise> noises;
@@ -259,11 +250,11 @@ public:
             for (std::size_t p = 0; p < n_particles; ++p) {
                 noises.push_back(
                     DichotomicNoise::ZeroMeanAsymmetric(2.0, -1.0, gamma_b, dt,
-                                                       400u + static_cast<unsigned int>(p))
-                );
+                                                        400u + static_cast<unsigned int>(p)));
             }
 
-            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, epsilon, burn_in);
+            bool store_traj = t_demo.empty();
+            auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, epsilon, burn_in, store_traj);
 
             v_mean_vals.push_back(res.mean_velocity);
             D_eff_vals.push_back(res.diffusion_coeff);
@@ -272,8 +263,8 @@ public:
                       << "\t\t" << res.diffusion_coeff << "\n";
 
             // Сохраняем первое окно для демонстрации
-            if (t_demo.empty()) {
-                for (std::size_t i = 0; i < res.t.size(); ++i) {
+            if (t_demo.empty() && res.has_trajectory) {
+                for (std::size_t i = 0; i < res.mean_x.size(); ++i) {
                     double t = res.t[i];
                     if (t < T_plot_start) continue;
                     if (t > T_plot_end) break;
@@ -284,13 +275,14 @@ public:
         }
 
         Plotter plotter;
+
         if (!t_demo.empty()) {
             std::cout << "\n Отрисовка траектории (окно 100 c после burn-in)...\n";
-            plotter.plot(t_demo, x_demo, "x(t)", "t", "<x(t)>");
+            plotter.plot(t_demo, x_demo, "x(t)", "t", "");
         }
 
-        std::cout << "\n Отрисовка графика <v>(ε)...\n";
-        plotter.plot(epsilon_vals, v_mean_vals, "<v>(ε)", "ε", "<v>");
+        std::cout << "\n Отрисовка графика (ε)...\n";
+        plotter.plot(epsilon_vals, v_mean_vals, "(ε)", "ε", "");
 
         std::cout << " Отрисовка графика D_eff(ε)...\n";
         plotter.plot(epsilon_vals, D_eff_vals, "D_eff(ε)", "ε", "D_eff");
