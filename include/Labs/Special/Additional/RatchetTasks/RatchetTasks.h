@@ -221,16 +221,16 @@ public:
         std::cout << " Асимметричный дихотомный шум (±1, gamma_a != gamma_b)\n";
         std::cout << "───────────────────────────────────────────────────────────\n";
 
-        double gamma_b = 18;
-        double V0 = 0.8;
+        double gamma_b = 0.7;
+        double V0 = 0.2;
         std::size_t n_particles = 100000;
-        std::vector<double> epsilon_vals = {0.0, 0.1, 0.5, 1.0};
+        std::vector<double> epsilon_vals = {0.35};
         std::vector<double> v_mean_vals;
         std::vector<double> D_eff_vals;
 
         std::size_t burn_in = choose_burn_in(N);
         double t_burn = burn_in * dt;
-        double T_window = 100.0;
+        double T_window = 10.0;
         double T_plot_start = t_burn;
         double T_plot_end = t_burn + T_window;
 
@@ -253,7 +253,7 @@ public:
                                                         400u + static_cast<unsigned int>(p)));
             }
 
-            bool store_traj = t_demo.empty();
+            bool store_traj = true;
             auto res = solver.solve_ensemble_independent(noises, N, n_particles, 0.0, epsilon, burn_in, store_traj);
 
             v_mean_vals.push_back(res.mean_velocity);
@@ -289,6 +289,97 @@ public:
 
         std::cout << "✓ Графики для задания Г отрисованы!\n";
     }
+
+    static void taskD(double L, double dt, std::size_t N) {
+
+    std::cout << "\n>>> ЗАДАНИЕ D: Амплитудный рэтчет f(t) = u + w*σ(t)\n";
+    std::cout << " Асимметричный потенциал с модуляцией АМПЛИТУДЫ\n";
+    std::cout << " V'(x) = cos(2πx) + (1/2)cos(4πx)\n";
+    std::cout << "───────────────────────────────────────────────────────────\n";
+
+    double gamma_b = 0.4;          // → tau_c ≈ 0.67 с
+    double V0 = 0.4;              // Амплитуда потенциала
+    double u = 0.5;               // Средний уровень модуляции
+    std::size_t n_particles = 100000;
+
+    // Сетка по амплитуде w (амплитуда пульсации)
+    std::vector<double> w_vals = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5};
+
+    std::vector<double> v_mean_vals;
+    std::vector<double> D_eff_vals;
+
+    std::size_t burn_in = choose_burn_in(N);
+    double t_burn = burn_in * dt;
+    double T_window = 10.0;
+    double T_plot_start = t_burn;
+    double T_plot_end = t_burn + T_window;
+
+    std::cout << "w (амплитуда)\t\t<v>\t\t\tD_eff\n";
+    std::cout << "────────────────────────────────────────────────\n";
+
+    std::vector<double> t_demo, x_demo;
+
+    for (double w : w_vals) {
+
+        LangevinSolver solver(
+            getDVdxAsymmetric(), V0, L, dt,
+            LangevinSolver::ModulationType::AMPLITUDE_MODULATION, 500);
+
+        // Вектор независимых симметричных дихотомных шумов
+        // σ(t) = ±1 с одинаковыми вероятностями
+        std::vector<DichotomicNoise> noises;
+        noises.reserve(n_particles);
+
+        double tau_c_noise = 1.0 / gamma_b;  // время корреляции шума
+
+        for (std::size_t p = 0; p < n_particles; ++p) {
+            // Создаём симметричный дихотомный шум: a=1, b=-1
+            noises.emplace_back(
+                1.0,              // a = +1
+                tau_c_noise,      // tau_c
+                dt,
+                500u + static_cast<unsigned int>(p)
+            );
+        }
+
+        bool store_traj = true;
+
+        // Вызов НОВОГО метода с амплитудной модуляцией
+        auto res = solver.solve_ensemble_amplitude(
+            noises, N, n_particles, 0.0, u, w, burn_in, store_traj);
+
+        v_mean_vals.push_back(res.mean_velocity);
+        D_eff_vals.push_back(res.diffusion_coeff);
+
+        std::cout << w << "\t\t\t" << res.mean_velocity
+                  << "\t\t" << res.diffusion_coeff << "\n";
+
+        // Сохраняем первую траекторию для демонстрации
+        if (t_demo.empty() && res.has_trajectory) {
+            for (std::size_t i = 0; i < res.mean_x.size(); ++i) {
+                double t = res.t[i];
+                if (t < T_plot_start) continue;
+                if (t > T_plot_end) break;
+                t_demo.push_back(t);
+                x_demo.push_back(res.mean_x[i]);
+            }
+        }
+    }
+
+    Plotter plotter;
+    if (!t_demo.empty()) {
+        std::cout << "\n Отрисовка траектории (w=0)...\n";
+        plotter.plot(t_demo, x_demo, "x(t)", "t", "");
+    }
+
+    std::cout << "\n Отрисовка графика <v>(w)...\n";
+    plotter.plot(w_vals, v_mean_vals, "<v>(w)", "w (амплитуда)", "<v>");
+
+    std::cout << " Отрисовка графика D_eff(w)...\n";
+    plotter.plot(w_vals, D_eff_vals, "D_eff(w)", "w (амплитуда)", "D_eff");
+
+    std::cout << "✓ Графики для задания D (амплитудный рэтчет) отрисованы!\n";
+}
 };
 
 #endif // NUMERICAL_METHODS_IN_PHYSICS_RATCHETTASKS_H
