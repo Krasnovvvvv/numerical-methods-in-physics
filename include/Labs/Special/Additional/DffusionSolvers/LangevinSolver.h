@@ -180,7 +180,7 @@ public:
           mod_type_(mod_type),
           rng_(seed),
           gaussian_(0.0, 1.0),
-          sqrt2_coeff_(std::sqrt(0.2)),
+          sqrt2_coeff_(std::sqrt(2.0)),
           L_half_(L / 2.0),
           n_threads_(std::thread::hardware_concurrency()) {
 
@@ -553,22 +553,20 @@ public:
         }
 
         double t_max = (N - burn_in) * dt_;
-        if (N > burn_in + 1 && t_max > 0.0 && store_trajectory) {
-            double sum_all_disp = 0.0;
-            double x0_eff_mean = res.mean_x[0];
+        if (store_trajectory && res.mean_x.size() > burn_in + 1 && t_max > 0.0) {
+            // приращение средней координаты между t_burn_in и t_max
+            double dx = res.mean_x.back() - res.mean_x[burn_in];
 
-            for (std::size_t i = 0; i < res.mean_x.size(); ++i) {
-                double dx = res.mean_x[i] - x0_eff_mean;
-                if (dx > L_half_) dx -= L_;
-                if (dx < -L_half_) dx += L_;
-                sum_all_disp += dx;
-            }
+            // учёт периодических границ
+            if (dx > L_half_)  dx -= L_;
+            if (dx < -L_half_) dx += L_;
 
-            std::size_t N_eff = N - burn_in;
-            res.mean_velocity = (1.0 / t_max) * (1.0 / static_cast<double>(N_eff)) * sum_all_disp;
+            // средняя скорость, усреднённая по ансамблю и времени
+            res.mean_velocity = dx / t_max;
         } else {
             res.mean_velocity = 0.0;
         }
+
 
         if (cnt_msd > 0) {
             double mean_msd = sum_msd / static_cast<double>(cnt_msd);

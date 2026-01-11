@@ -21,7 +21,7 @@ private:
     // V'(x) для симметричного потенциала (задание A)
     static auto getDVdxSymmetric() {
         return [](double x) -> double {
-            return std::cos(TWO_PI * x);
+            return -std::cos(TWO_PI * x);
         };
     }
 
@@ -48,9 +48,9 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double tau_c = 0.4;
-        std::size_t n_particles = 500;
-        std::vector<double> V0_vals = {0.5, 1.0, 2.0};
+        double tau_c = 0.05;
+        std::size_t n_particles = 20000;
+        std::vector<double> V0_vals = {0.8, 1.5, 2.5};
         std::vector<std::vector<double>> t_vecs;
         std::vector<std::vector<double>> x_vecs;
         std::vector<std::string> labels;
@@ -96,7 +96,7 @@ public:
         }
 
         Plotter plotter;
-        plotter.plot(t_vecs, x_vecs, labels, "t", "");
+        plotter.plot(t_vecs, x_vecs, labels, "t", "<x>");
         std::cout << "✓ График x(t) (A) отрисован!\n";
     }
 
@@ -111,9 +111,9 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double tau_c = 1.5;
-        std::size_t n_particles = 100;
-        std::vector<double> V0_vals = {0.5};
+        double tau_c = 1.9;
+        std::size_t n_particles = 100000;
+        std::vector<double> V0_vals = {0.8, 1.5, 2.5, 3.5};
         std::vector<std::vector<double>> t_vecs;
         std::vector<std::vector<double>> x_vecs;
         std::vector<std::string> labels;
@@ -160,7 +160,7 @@ public:
         }
 
         Plotter plotter;
-        plotter.plot(t_vecs, x_vecs, labels, "t", "");
+        plotter.plot(t_vecs, x_vecs, labels, "t", "<x>");
         std::cout << "✓ График x(t) (B) отрисован!\n";
     }
 
@@ -174,9 +174,9 @@ public:
         std::cout << "───────────────────────────────────────────────────────────\n";
 
         double a = 1.0;
-        double V0 = 2.5;
-        std::size_t n_particles = 10000;
-        std::vector<double> tau_c_vals = {0.01, 0.03, 0.05, 0.07, 0.09, 0.1, 0.12, 0.15, 0.2, 0.3, 0.5, 0.8};
+        double V0 = 0.8;
+        std::size_t n_particles = 100000;
+        std::vector<double> tau_c_vals = {3.5, 3.0, 2.5, 2.0, 1.9, 1.8, 1.7, 1.6, 1.4, 1.0, 0.8};
         std::vector<double> inv_tau_c_vals;
         std::vector<double> v_mean_vals;
 
@@ -221,9 +221,9 @@ public:
         std::cout << " Асимметричный дихотомный шум (±1, gamma_a != gamma_b)\n";
         std::cout << "───────────────────────────────────────────────────────────\n";
 
-        double gamma_b = 8;
-        double V0 = 1.0;
-        std::size_t n_particles = 10000;
+        double gamma_b = 18;
+        double V0 = 0.8;
+        std::size_t n_particles = 100000;
         std::vector<double> epsilon_vals = {0.0, 0.1, 0.5, 1.0};
         std::vector<double> v_mean_vals;
         std::vector<double> D_eff_vals;
