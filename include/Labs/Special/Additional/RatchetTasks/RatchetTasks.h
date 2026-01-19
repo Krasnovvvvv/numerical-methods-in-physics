@@ -28,7 +28,7 @@ private:
     // V'(x) для асимметричного потенциала (задания B, C, G)
     static auto getDVdxAsymmetric() {
         return [](double x) -> double {
-            return -(std::cos(TWO_PI * x) + 0.5 * std::cos(FOUR_PI * x));
+            return (std::cos(TWO_PI * x) + 0.5 * std::cos(FOUR_PI * x));
         };
     }
 
@@ -297,20 +297,20 @@ public:
     std::cout << " V'(x) = cos(2πx) + (1/2)cos(4πx)\n";
     std::cout << "───────────────────────────────────────────────────────────\n";
 
-    double gamma_b = 0.4;          // → tau_c ≈ 0.67 с
-    double V0 = 0.4;              // Амплитуда потенциала
-    double u = 0.5;               // Средний уровень модуляции
+    double gamma_b = 0.5;          // → tau_c ≈ 0.67 с
+    double V0 = 0.5;              // Амплитуда потенциала
+    double u = 0.7;               // Средний уровень модуляции
     std::size_t n_particles = 100000;
 
     // Сетка по амплитуде w (амплитуда пульсации)
-    std::vector<double> w_vals = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5};
+    std::vector<double> w_vals = {0.4};
 
     std::vector<double> v_mean_vals;
     std::vector<double> D_eff_vals;
 
     std::size_t burn_in = choose_burn_in(N);
     double t_burn = burn_in * dt;
-    double T_window = 10.0;
+    double T_window = 100.0;
     double T_plot_start = t_burn;
     double T_plot_end = t_burn + T_window;
 
@@ -330,13 +330,14 @@ public:
         std::vector<DichotomicNoise> noises;
         noises.reserve(n_particles);
 
-        double tau_c_noise = 1.0 / gamma_b;  // время корреляции шума
+        //double tau_c_noise = 1.0 / gamma_b;  // время корреляции шума
 
         for (std::size_t p = 0; p < n_particles; ++p) {
-            // Создаём симметричный дихотомный шум: a=1, b=-1
             noises.emplace_back(
-                1.0,              // a = +1
-                tau_c_noise,      // tau_c
+                3.0,
+                -5.0,
+                1.9,
+                0.6,
                 dt,
                 500u + static_cast<unsigned int>(p)
             );
