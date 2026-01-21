@@ -16,9 +16,9 @@ int main() {
     std::cout << std::setprecision(6) << std::fixed;
 
     // ==================== ПАРАМЕТРЫ ====================
-    double L  = 15.0;         // Период области
+    double L  = 1.0;         // Период области
     double dt = 0.001;       // Шаг интегрирования
-    std::size_t N = 25'000;   // Число шагов интегрирования
+    std::size_t N = 16'000;   // Число шагов интегрирования
 
     std::cout << "\nПараметры численного решения:\n";
     std::cout << "  L = " << L << " (период)\n";
@@ -42,6 +42,8 @@ int main() {
     std::cout << "\n" << std::string(70, '=') << "\n";
     //RatchetTasks::taskG(L, dt, N);
 
-    RatchetTasks::taskD(L, dt, N);
+    //RatchetTasks::taskD(L, dt, N);
+
+    RatchetTasks::taskComparisonAnalytical(L, dt, N);
 
 }

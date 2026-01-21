@@ -381,6 +381,199 @@ public:
 
     std::cout << "✓ Графики для задания D (амплитудный рэтчет) отрисованы!\n";
 }
+
+// =========================
+// СРАВНЕНИЕ С АНАЛИТИКОЙ (Формулы 12-13 из статьи)
+// Rozenbaum et al. JETP Lett. 79, 388 (2004)
+// =========================
+
+static void taskComparisonAnalytical(double L, double dt, std::size_t N) {
+
+    double L_period = 1.0;
+
+    double V0 = 3.5;            // Масштаб потенциальной энергии
+    double V1 = V0;             // Амплитуда первой гармоники
+    double V2 = 0.5 * V0;       // Амплитуда второй гармоники
+
+    // Температура
+    double T = 15.0;            // Абсолютная температура (в условных единицах)
+    double kB = 1.0;            // Постоянная Больцмана (естественные единицы)
+    double kT = kB * T;         // Произведение
+    double beta = 1.0 / kT;
+
+    double a = 1.0;             // Амплитуда шума
+
+    double tau_c = 1.0;         // τ_c — время корреляции
+
+    double gamma_b = 0.8;  // Переходная вероятность
+    double D = 1.0 / (beta * gamma_b);  // Коэффициент диффузии
+
+    double tau_plus = tau_c;     // τ_+ = τ_c
+    double tau_minus = tau_c;    // τ_- = τ_c
+    double tau = 1.0 / (1.0/tau_plus + 1.0/tau_minus);  // Среднее время
+    double delta = tau_minus / (tau_plus + tau_minus);
+
+    std::size_t n_particles = 100000;
+    std::size_t burn_in = 8'000;
+
+    // ========================================================================
+    // ВЫВОД ПАРАМЕТРОВ
+    // ========================================================================
+
+    std::cout << "\n┌─ ПАРАМЕТРЫ МОДЕЛИ ──────────────────────────────────────┐\n";
+    std::cout << "│ ГЕОМЕТРИЯ ПОТЕНЦИАЛА:                                    │\n";
+    std::cout << "│  L (период потенциала)               = " << std::setw(12) << L_period << "   │\n";
+    std::cout << "│  V(x) = V₁·sin(2πx/L) + V₂·sin(4πx/L)                   │\n";
+    std::cout << "│  V₀ (масштаб амплитуды)              = " << std::setw(12) << V0 << "   │\n";
+    std::cout << "│  V₁ (первая гармоника)               = " << std::setw(12) << V1 << "   │\n";
+    std::cout << "│  V₂ (вторая гармоника)               = " << std::setw(12) << V2 << "   │\n";
+
+    std::cout << "│                                                          │\n";
+    std::cout << "│ ТЕРМОДИНАМИКА:                                           │\n";
+    std::cout << "│  T (абсолютная температура)          = " << std::setw(12) << T << "   │\n";
+    std::cout << "│  k_B·T                               = " << std::setw(12) << kT << "   │\n";
+    std::cout << "│  β = (k_B·T)⁻¹ (обратная темп.)      = " << std::setw(12) << beta << "   │\n";
+    std::cout << "│  β·V₀ (безразм. амплитуда потенц.)   = " << std::setw(12) << (beta * V0) << "   │\n";
+    std::cout << "│  β·V₀ << 1? (высокотемп. предел)     = ";
+    std::cout << ((beta * V0 < 0.1) ? "ДА ✓" : "НЕТ ✗") << std::setw(24) << "│\n";
+
+    std::cout << "│                                                          │\n";
+    std::cout << "│ СТОХАСТИЧЕСКИЕ ПАРАМЕТРЫ:                               │\n";
+    std::cout << "│  a (амплитуда шума σ = ±1)            = " << std::setw(12) << a << "   │\n";
+    std::cout << "│  τ_c (время корреляции)               = " << std::setw(12) << tau_c << "   │\n";
+    std::cout << "│  γ_- = 1/τ_c (вероятность)            = " << std::setw(12) << gamma_b << "   │\n";
+    std::cout << "│  D = a²/(2γ_-) (коэфф. диффузии)      = " << std::setw(12) << D << "   │\n";
+    std::cout << "│  τ_+ = τ_- = τ_c (симметричный)       = " << std::setw(12) << tau_plus << "   │\n";
+    std::cout << "│  δ = τ_-(τ_+ + τ_-)⁻¹                 = " << std::setw(12) << delta << "   │\n";
+
+    std::cout << "│                                                          │\n";
+    std::cout << "│ ЧИСЛЕННОЕ МОДЕЛИРОВАНИЕ:                                │\n";
+    std::cout << "│  Количество частиц в ансамбле         = " << std::setw(12) << n_particles << "   │\n";
+    std::cout << "│  Общее число шагов                    = " << std::setw(12) << N << "   │\n";
+    std::cout << "│  Шаг интегрирования dt                = " << std::setw(12) << dt << "   │\n";
+    std::cout << "└──────────────────────────────────────────────────────────┘\n";
+
+    double two_pi = 2.0 * M_PI;
+    double xi = (L_period / two_pi) * (L_period / two_pi) / (D * tau_c);
+
+    double z = xi / (4.0 * delta * (1.0 - delta));
+
+
+    double denom = (1.0 + 4.0*z) * (1.0 + 4.0*z) * (1.0 + z);
+
+    // Φ₁⁽ˢ⁾(ξ, δ) = 3ξ(1 + 2z) / [(1+4z)²(1+z)]
+    double Phi1_S = (3.0 * xi * (1.0 + 2.0*z)) / denom;
+
+
+    // Φ₂⁽ˢ⁾(ξ, δ) = (1 - 2δ) · 6ξz / [(1+4z)²(1+z)]
+    double Phi2_S = (1.0 - 2.0*delta) * (6.0 * xi * z) / denom;
+
+    std::cout << "\n┌─ АНАЛИТИЧЕСКОЕ РЕШЕНИЕ (Формула 12) ────────────────────┐\n";
+
+    double alpha = (V2 - 0.0) / (V1 + V2);  // Асимметрия: (V₂)/(V₁ + V₂)
+
+    // ν⁽ˢ'ᴰ⁾ = (π·D)/(4L) · β³ · V₁² · V₂ · (1-α)² · [(1+α)Φ₁⁽ˢ'ᴰ⁾ + (1-α)Φ₂⁽ˢ'ᴰ⁾]
+
+    double prefactor = (M_PI * D) / (4.0 * L_period);
+
+    double beta3 = beta * beta * beta;
+
+    double V1_sq = V1 * V1;
+
+    double asym_factor = (1.0 - alpha) * (1.0 - alpha);
+
+    double Phi_weighted = (1.0 + alpha) * Phi1_S + (1.0 - alpha) * Phi2_S;
+
+    double v_analytical = prefactor * beta3 * V1_sq * V2 * asym_factor * Phi_weighted;
+            std::cout << "│ ν_АНАЛИТИЧЕСКАЯ = " << std::scientific << std::setprecision(8)
+              << v_analytical << " │\n" << std::defaultfloat;
+
+
+    LangevinSolver solver(
+        getDVdxAsymmetric(), V0, L, dt,
+        LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 600);
+
+    std::vector<DichotomicNoise> noises;
+    noises.reserve(n_particles);
+    for (std::size_t p = 0; p < n_particles; ++p) {
+        noises.emplace_back(a, tau_c, dt, 600u + static_cast<unsigned>(p));
+    }
+
+    auto res_numerical = solver.solve_ensemble_independent(
+        noises, N, n_particles, 0.0, 0.0, burn_in, true);
+
+    std::cout << "│ Time window (burn-in period): " << std::setw(19) << (burn_in * dt) << " с  │\n";
+    std::cout << "│ Time window (measurement):    " << std::setw(19)
+              << ((N - burn_in) * dt) << " с  │\n";
+    std::cout << "│                                                          │\n";
+    std::cout << "│ v_ЧИСЛЕННАЯ = " << std::scientific << std::setprecision(8)
+              << res_numerical.mean_velocity << " │\n" << std::defaultfloat;
+
+    // ========================================================================
+    // СРАВНЕНИЕ И АНАЛИЗ ОШИБКИ
+    // ========================================================================
+
+    double error_abs = std::abs(res_numerical.mean_velocity - v_analytical);
+    double error_rel = (v_analytical != 0.0)
+        ? (error_abs / std::abs(v_analytical)) * 100.0
+        : 100.0;
+
+    std::cout << "\n╔════════════════════════════════════════════════════════════╗\n";
+    std::cout << "║               СРАВНЕНИЕ РЕЗУЛЬТАТОВ                         ║\n";
+    std::cout << "╠════════════════════════════════════════════════════════════╣\n";
+    std::cout << "║ v_аналитическая = " << std::scientific << std::setprecision(8)
+              << v_analytical << std::defaultfloat << "                     ║\n";
+    std::cout << "║ v_численная     = " << std::scientific << std::setprecision(8)
+              << res_numerical.mean_velocity << std::defaultfloat << "                     ║\n";
+    std::cout << "║ Абсолютная ошибка = " << std::scientific << std::setprecision(4)
+              << error_abs << std::defaultfloat << "                          ║\n";
+    std::cout << "║ Относительная ошибка = " << std::fixed << std::setprecision(2)
+              << error_rel << " %" << std::setw(38) << "║\n";
+    std::cout << "╠════════════════════════════════════════════════════════════╣\n";
+
+    if (error_rel < 5.0) {
+        std::cout << "║ ✓✓✓ ОТЛИЧНОЕ СОГЛАСИЕ (ошибка < 5%)!                      ║\n";
+    } else if (error_rel < 15.0) {
+        std::cout << "║ ✓✓  ХОРОШЕЕ СОГЛАСИЕ (ошибка 5-15%)                       ║\n";
+    } else if (error_rel < 30.0) {
+        std::cout << "║ ✓   ПРИЕМЛЕМОЕ СОГЛАСИЕ (ошибка 15-30%)                   ║\n";
+    } else if (error_rel < 50.0) {
+        std::cout << "║ ≈   УМЕРЕННОЕ РАСХОЖДЕНИЕ (ошибка 30-50%)                 ║\n";
+    } else {
+        std::cout << "║ ✗   ЗНАЧИТЕЛЬНОЕ РАСХОЖДЕНИЕ (ошибка > 50%)!              ║\n";
+        std::cout << "║ → Проверьте параметры и формулы!                          ║\n";
+    }
+    std::cout << "╚════════════════════════════════════════════════════════════╝\n";
+
+    std::size_t burn_in_idx = burn_in;
+    std::size_t T_plot_end = std::min(static_cast<std::size_t>(N), burn_in + 10000);
+    std::size_t step = std::max<std::size_t>(1, (T_plot_end - burn_in_idx) / 500);
+
+    std::vector<double> t_plot, v_numerical_plot, v_analytical_plot;
+
+    double x0_window = res_numerical.mean_x[burn_in_idx];
+
+    for (std::size_t i = burn_in_idx; i < T_plot_end; i += step) {
+        if (i < res_numerical.t.size()) {
+            t_plot.push_back(res_numerical.t[i]);
+            v_numerical_plot.push_back(res_numerical.mean_x[i]);
+
+            double t_rel = res_numerical.t[i] - res_numerical.t[burn_in_idx];
+            v_analytical_plot.push_back(x0_window + v_analytical * t_rel);
+        }
+    }
+
+    std::vector<std::vector<double>> xs = {t_plot, t_plot};
+    std::vector<std::vector<double>> ys = {v_numerical_plot, v_analytical_plot};
+    std::vector<std::string> labels = {
+        "Численное решение (ансамбль)",
+        "Аналитическое решение (формула 12)"
+    };
+
+    Plotter plotter;
+    plotter.plot(xs, ys, labels, "Время t (сек)", "Позиция x(t)");
+
+}
 };
 
 #endif // NUMERICAL_METHODS_IN_PHYSICS_RATCHETTASKS_H

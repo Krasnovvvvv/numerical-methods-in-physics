@@ -181,7 +181,7 @@ public:
           mod_type_(mod_type),
           rng_(seed),
           gaussian_(0.0, 1.0),
-          sqrt2_coeff_(std::sqrt(2.0)),
+          sqrt2_coeff_(std::sqrt(2.0*5)),
           L_half_(L / 2.0),
           n_threads_(std::thread::hardware_concurrency()) {
 
