@@ -4,48 +4,164 @@
 #pragma once
 
 #include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
 #include <random>
 #include <cmath>
-#include <functional>
-#include <stdexcept>
+#include <atomic>
 #include "Labs/Special/Additional/NoiseGenerator/DichotomicNoise.h"
 
-// ============================================================================
-// Структура для одной траектории (старая версия, для совместимости)
-// ============================================================================
+// Структура для одной траектории
 struct LangevinTrajectory {
-    std::vector<double> t;           // время
-    std::vector<double> x;           // позиция
-    double L;                        // период
+    std::vector<double> t;
+    std::vector<double> x;
+    double L;
     double mean_position;
     double mean_velocity;
     double diffusion_coeff;
 };
 
-// ============================================================================
 // Структура для ансамбля частиц
-// ============================================================================
 struct LangevinEnsembleResult {
-    std::vector<double> t;           // временные точки
-    std::vector<double> mean_x;      // средняя позиция по ансамблю <x(t)>
-    std::vector<double> mean_x2;     // <x²(t)> для анализа
-    double L;                        // период
-    double mean_velocity;            // средняя скорость по ансамблю
-    double diffusion_coeff;          // коэффициент диффузии
-    std::size_t n_particles;         // число частиц
+    std::vector<double> t;
+    std::vector<double> mean_x;
+    double L;
+    double mean_velocity;
+    double diffusion_coeff;
+    std::size_t n_particles;
+    bool has_trajectory;
 };
 
-// ============================================================================
-// Решатель Ланжевена
-// ============================================================================
+// Рабочий поток в пуле
+class WorkerThread {
+public:
+    WorkerThread() : should_stop_(false), is_working_(false), is_running_(true) {
+        thread_ = std::thread(&WorkerThread::run, this);
+    }
+
+    // Запрет копирования
+    WorkerThread(const WorkerThread&) = delete;
+    WorkerThread& operator=(const WorkerThread&) = delete;
+
+    // Разрешение перемещения
+    WorkerThread(WorkerThread&& other) noexcept
+        : thread_(std::move(other.thread_)),
+          task_queue_(std::move(other.task_queue_)),
+          should_stop_(other.should_stop_),
+          is_working_(other.is_working_),
+          is_running_(other.is_running_) {
+        // Сбрасываем другой объект в безопасное состояние
+        other.should_stop_ = true;
+        other.is_working_ = false;
+        other.is_running_ = false;
+    }
+
+    WorkerThread& operator=(WorkerThread&& other) noexcept {
+        if (this != &other) {
+            stop(); // Останавливаем свой поток перед перемещением
+
+            thread_ = std::move(other.thread_);
+            task_queue_ = std::move(other.task_queue_);
+            should_stop_ = other.should_stop_;
+            is_working_ = other.is_working_;
+            is_running_ = other.is_running_;
+
+            other.should_stop_ = true;
+            other.is_working_ = false;
+            other.is_running_ = false;
+        }
+        return *this;
+    }
+
+    ~WorkerThread() {
+        stop();
+    }
+
+    void submit_task(std::function<void()> task) {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (!is_running_) return; // Не добавляем в остановленный поток
+            task_queue_.push(std::move(task));
+        }
+        cv_.notify_one();
+    }
+
+    void stop() {
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (!is_running_) return; // Уже остановлен
+            should_stop_ = true;
+            is_running_ = false;
+        }
+        cv_.notify_one();
+        if (thread_.joinable()) {
+            thread_.join();
+        }
+    }
+
+    void wait_idle() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this]()
+            { return task_queue_.empty()
+            && !is_working_; });
+    }
+
+private:
+    void run() {
+        while (true) {
+            std::function<void()> task;
+
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                cv_.wait(lock, [this]() {
+                    return !task_queue_.empty() || should_stop_;
+                });
+
+                if (should_stop_ && task_queue_.empty()) {
+                    break;
+                }
+
+                if (!task_queue_.empty()) {
+                    task = std::move(task_queue_.front());
+                    task_queue_.pop();
+                    is_working_ = true;
+                }
+            }
+
+            if (task) {
+                task();
+
+                {
+                    std::lock_guard<std::mutex> lock(mutex_);
+                    is_working_ = false;
+                }
+                cv_.notify_one();
+            }
+        }
+    }
+
+    std::thread thread_;
+    std::queue<std::function<void()>> task_queue_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    bool should_stop_;
+    bool is_working_;
+    bool is_running_;
+};
+
+// Решатель Ланжевена с пулом потоков
 class LangevinSolver {
 public:
     using DVDXFunc = std::function<double(double)>;
 
     enum class ModulationType {
-        CONSTANT,              // f(t) = 1.0
-        DICHOTOM_SYMMETRIC,    // f(t) = (1/2)(1 + σ(t))
-        EPSILON_PLUS_DICHOTOM  // f(t) = ε + σ(t)
+        CONSTANT,
+        DICHOTOM_SYMMETRIC,
+        EPSILON_PLUS_DICHOTOM,
+        AMPLITUDE_MODULATION
     };
 
     LangevinSolver(DVDXFunc dVdx,
@@ -60,191 +176,160 @@ public:
           dt_(dt),
           mod_type_(mod_type),
           rng_(seed),
-          gaussian_(0.0, 1.0)
-    {
+          gaussian_(0.0, 1.0),
+          sqrt2_coeff_(std::sqrt(2.0*5)),
+          L_half_(L / 2.0),
+          n_threads_(std::thread::hardware_concurrency()) {
+
+        if (n_threads_ == 0) n_threads_ = 4;
         if (dt_ <= 0.0) throw std::invalid_argument("dt must be > 0");
         if (L_ <= 0.0) throw std::invalid_argument("L must be > 0");
         if (V0_ < 0.0) throw std::invalid_argument("V0 must be >= 0");
-        sqrt2_coeff_ = std::sqrt(2.0);
+
+        // Инициализируем пул рабочих потоков
+        initialize_thread_pool();
     }
 
-    // ========================================================================
-    // Старый метод: одна частица
-    // ========================================================================
-    LangevinTrajectory solve(DichotomicNoise& noise,
-                             std::size_t N,
-                             double x0 = 0.0,
-                             double epsilon = 0.0,
-                             std::size_t burn_in = 0)
-    {
-        auto dichotom_profile = noise.generate(N, 0, true);
-
-        LangevinTrajectory res;
-        res.t.resize(N);
-        res.x.resize(N);
-        res.L = L_;
-
-        double x = std::fmod(x0, L_);
-        if (x < 0.0) x += L_;
-
-        for (std::size_t n = 0; n < N; ++n) {
-            res.t[n] = static_cast<double>(n) * dt_;
-            res.x[n] = x;
-
-            double sigma_n = dichotom_profile.s[n];
-            double f_t = compute_f_t(sigma_n, epsilon);
-
-            double zeta_n = gaussian_(rng_);
-            double dVdx_n = dVdx_(x);
-            double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
-            x += dxdt * dt_;
-
-            x = std::fmod(x, L_);
-            if (x < 0.0) x += L_;
-        }
-
-        if (burn_in > N) burn_in = N;
-
-        // средняя позиция
-        double sum_x = 0.0;
-        std::size_t cnt = 0;
-        for (std::size_t n = burn_in; n < N; ++n) {
-            sum_x += res.x[n];
-            ++cnt;
-        }
-        res.mean_position = (cnt > 0) ? (sum_x / static_cast<double>(cnt)) : 0.0;
-
-        // средняя скорость
-        double t_max = (N - burn_in) * dt_;
-        if (N > burn_in + 1 && t_max > 0.0) {
-            double sum_disp = 0.0;
-            double x0_eff = res.x[burn_in];
-            for (std::size_t n = burn_in; n < N; ++n) {
-                double dx = res.x[n] - x0_eff;
-                if (dx > L_ / 2.0) dx -= L_;
-                if (dx < -L_ / 2.0) dx += L_;
-                sum_disp += dx;
-            }
-            std::size_t N_eff = N - burn_in;
-            res.mean_velocity = (1.0 / t_max) * (1.0 / static_cast<double>(N_eff)) * sum_disp;
-        } else {
-            res.mean_velocity = 0.0;
-        }
-
-        // коэффициент диффузии
-        if (N > burn_in + 1) {
-            double sum_dx2 = 0.0;
-            std::size_t cnt_dx = 0;
-            for (std::size_t n = burn_in + 1; n < N; ++n) {
-                double dx = res.x[n] - res.x[n - 1];
-                if (dx > L_ / 2.0) dx -= L_;
-                if (dx < -L_ / 2.0) dx += L_;
-                sum_dx2 += dx * dx;
-                ++cnt_dx;
-            }
-            double mean_dx2 = sum_dx2 / static_cast<double>(cnt_dx);
-            res.diffusion_coeff = mean_dx2 / (2.0 * dt_);
-        } else {
-            res.diffusion_coeff = 0.0;
-        }
-
-        return res;
+    ~LangevinSolver() {
+        shutdown_thread_pool();
     }
 
-    // ========================================================================
-    // НОВЫЙ метод: ансамбль из n_particles частиц в ОДНОМ общем шуме
-    // ========================================================================
-    LangevinEnsembleResult solve_ensemble(DichotomicNoise& noise,
-                                          std::size_t N,
-                                          std::size_t n_particles,
-                                          double x0 = 0.0,
-                                          double epsilon = 0.0,
-                                          std::size_t burn_in = 0)
-    {
+    // Ансамбль с независимыми шумами
+    LangevinEnsembleResult solve_ensemble_independent(
 
-        auto dichotom_profile = noise.generate(N, 0, true);
+        std::vector<DichotomicNoise>& noises,
+        std::size_t N,
+        std::size_t n_particles,
+        double x0 = 0.0,
+        double epsilon = 0.0,
+        std::size_t burn_in = 0,
+        bool store_trajectory = true) {
 
         LangevinEnsembleResult res;
-        res.t.resize(N);
-        res.mean_x.resize(N);
-        res.mean_x2.resize(N);
         res.L = L_;
         res.n_particles = n_particles;
+        res.has_trajectory = store_trajectory;
 
-        // Массив частиц: x[p] — позиция частицы p
-        std::vector<double> x(n_particles, 0.0);
+        if (store_trajectory) {
+            res.t.reserve(N);
+            res.mean_x.reserve(N);
+        }
+
+        std::vector<double> x(n_particles);
         for (auto& xi : x) {
             xi = std::fmod(x0, L_);
             if (xi < 0.0) xi += L_;
         }
 
-        // Интегрирование: все частицы в общем шуме σ(t)
-        for (std::size_t n = 0; n < N; ++n) {
-            res.t[n] = static_cast<double>(n) * dt_;
-
-            double sigma_n = dichotom_profile.s[n];
-            double f_t = compute_f_t(sigma_n, epsilon);
-
-            // Сумма координат и квадратов координат
-            double sum_x = 0.0;
-            double sum_x2 = 0.0;
-
-            // Шаг интегрирования для каждой частицы
-            for (std::size_t p = 0; p < n_particles; ++p) {
-                // Каждой частице свой гауссовский шум
-                double zeta_n = gaussian_(rng_);
-                double dVdx_n = dVdx_(x[p]);
-                double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
-                x[p] += dxdt * dt_;
-
-                // Периодические ГУ
-                x[p] = std::fmod(x[p], L_);
-                if (x[p] < 0.0) x[p] += L_;
-
-                sum_x += x[p];
-                sum_x2 += x[p] * x[p];
-            }
-
-            res.mean_x[n] = sum_x / static_cast<double>(n_particles);
-            res.mean_x2[n] = sum_x2 / static_cast<double>(n_particles);
+        std::vector<std::mt19937> thread_rngs(n_threads_);
+        for (std::size_t t = 0; t < n_threads_; ++t) {
+            thread_rngs[t].seed(rng_() + t);
         }
 
-        if (burn_in > N) burn_in = N;
+        std::vector<std::normal_distribution<double>> thread_gaussians(
+            n_threads_, std::normal_distribution<double>(0.0, 1.0));
 
-        // === Средняя скорость по ансамблю (после burn_in) ===
-        double t_max = (N - burn_in) * dt_;
-        if (N > burn_in + 1 && t_max > 0.0) {
-            double sum_all_disp = 0.0;
-            double x0_eff_mean = res.mean_x[burn_in];
+        double sum_msd = 0.0;
+        std::size_t cnt_msd = 0;
+        double prev_mean_x = 0.0;
 
-            for (std::size_t n = burn_in; n < N; ++n) {
-                double dx = res.mean_x[n] - x0_eff_mean;
-                if (dx > L_ / 2.0) dx -= L_;
-                if (dx < -L_ / 2.0) dx += L_;
-                sum_all_disp += dx;
+        for (std::size_t n = 0; n < N; ++n) {
+            std::size_t chunk = (n_particles + n_threads_ - 1) / n_threads_;
+            std::vector<double> partial_sums(n_threads_, 0.0);
+            std::vector<std::atomic<int>> tasks_done(n_threads_);
+            for (auto& td : tasks_done) {
+                td.store(0, std::memory_order_relaxed);
             }
 
-            std::size_t N_eff = N - burn_in;
-            res.mean_velocity = (1.0 / t_max) * (1.0 / static_cast<double>(N_eff)) * sum_all_disp;
+            std::size_t n_active = 0;
+
+            for (std::size_t t = 0; t < n_threads_; ++t) {
+                std::size_t p_begin = t * chunk;
+                std::size_t p_end = std::min(n_particles, p_begin + chunk);
+
+                if (p_begin >= p_end) break;
+
+                ++n_active;
+
+                workers_[t].submit_task([this, &x, &noises, &partial_sums,
+                                        &thread_rngs, &thread_gaussians,
+                                        &tasks_done, epsilon, t, p_begin, p_end]() {
+                    double local_sum = 0.0;
+                    auto& local_rng = thread_rngs[t];
+                    auto& local_gaussian = thread_gaussians[t];
+
+                    for (std::size_t p = p_begin; p < p_end; ++p) {
+                        double sigma_n = noises[p].step();
+                        double f_t = compute_f_t(sigma_n, epsilon);
+                        double zeta_n = local_gaussian(local_rng);
+                        double dVdx_n = dVdx_(x[p]);
+
+                        double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
+                        x[p] += dxdt * dt_;
+                        x[p] = std::fmod(x[p], L_);
+                        if (x[p] < 0.0) x[p] += L_;
+
+                        local_sum += x[p];
+                    }
+
+                    partial_sums[t] = local_sum;
+                    tasks_done[t].store(1, std::memory_order_release);
+                });
+            }
+
+            // Ждём завершения только активных задач
+            for (std::size_t t = 0; t < n_active; ++t) {
+                std::size_t p_begin = t * chunk;
+                std::size_t p_end = std::min(n_particles, p_begin + chunk);
+                if (p_begin >= p_end) continue;
+
+                while (tasks_done[t].load(std::memory_order_acquire) == 0) {
+                    std::this_thread::yield();
+                }
+            }
+
+            double sum_x = 0.0;
+            for (std::size_t t = 0; t < n_active; ++t) {
+                sum_x += partial_sums[t];
+            }
+            double mean_x_n = sum_x / static_cast<double>(n_particles);
+
+            if (store_trajectory) {
+                res.t.push_back(static_cast<double>(n) * dt_);
+                res.mean_x.push_back(mean_x_n);
+            }
+
+            if (n > burn_in && n > 0) {
+                double dmean_x = mean_x_n - prev_mean_x;
+                if (dmean_x > L_half_) dmean_x -= L_;
+                if (dmean_x < -L_half_) dmean_x += L_;
+                sum_msd += dmean_x * dmean_x;
+                ++cnt_msd;
+            }
+
+            if (n >= burn_in) {
+                prev_mean_x = mean_x_n;
+            }
+        }
+
+        double t_max = (N - burn_in) * dt_;
+        if (store_trajectory && res.mean_x.size() > burn_in + 1 && t_max > 0.0) {
+            // приращение средней координаты между t_burn_in и t_max
+            double dx = res.mean_x.back() - res.mean_x[burn_in];
+
+            // учёт периодических границ
+            if (dx > L_half_)  dx -= L_;
+            if (dx < -L_half_) dx += L_;
+
+            // средняя скорость, усреднённая по ансамблю и времени
+            res.mean_velocity = dx / t_max;
         } else {
             res.mean_velocity = 0.0;
         }
 
-        // === Коэффициент диффузии (по MSD после burn_in) ===
-        if (N > burn_in + 1) {
-            double sum_msd = 0.0;
-            std::size_t cnt = 0;
 
-            for (std::size_t n = burn_in + 1; n < N; ++n) {
-                double dmean_x = res.mean_x[n] - res.mean_x[n - 1];
-                if (dmean_x > L_ / 2.0) dmean_x -= L_;
-                if (dmean_x < -L_ / 2.0) dmean_x += L_;
-
-                sum_msd += dmean_x * dmean_x;
-                ++cnt;
-            }
-
-            double mean_msd = sum_msd / static_cast<double>(cnt);
+        if (cnt_msd > 0) {
+            double mean_msd = sum_msd / static_cast<double>(cnt_msd);
             res.diffusion_coeff = mean_msd / (2.0 * dt_);
         } else {
             res.diffusion_coeff = 0.0;
@@ -253,22 +338,178 @@ public:
         return res;
     }
 
-    // геттеры
+LangevinEnsembleResult solve_ensemble_amplitude(
+    std::vector<DichotomicNoise>& noises,
+    std::size_t N,
+    std::size_t n_particles,
+    double x0,
+    double u,              // средний уровень: <f(t)> = u
+    double w,              // амплитуда: f(t) = u + w*sigma(t)
+    std::size_t burn_in,
+    bool store_trajectory = true) {
+
+    LangevinEnsembleResult res;
+    res.L = L_;
+    res.n_particles = n_particles;
+    res.has_trajectory = store_trajectory;
+
+    if (store_trajectory) {
+        res.t.reserve(N);
+        res.mean_x.reserve(N);
+    }
+
+    std::vector<double> x(n_particles);
+    for (auto& xi : x) {
+        xi = std::fmod(x0, L_);
+        if (xi < 0.0) xi += L_;
+    }
+
+    std::vector<std::mt19937> thread_rngs(n_threads_);
+    for (std::size_t t = 0; t < n_threads_; ++t) {
+        thread_rngs[t].seed(rng_() + t);
+    }
+
+    std::vector<std::normal_distribution<double>> thread_gaussians(
+        n_threads_, std::normal_distribution<double>(0.0, 1.0));
+
+    double sum_msd = 0.0;
+    std::size_t cnt_msd = 0;
+    double prev_mean_x = 0.0;
+
+    for (std::size_t n = 0; n < N; ++n) {
+        std::size_t chunk = (n_particles + n_threads_ - 1) / n_threads_;
+        std::vector<double> partial_sums(n_threads_, 0.0);
+        std::vector<std::atomic<int>> tasks_done(n_threads_);
+
+        for (auto& td : tasks_done) {
+            td.store(0, std::memory_order_relaxed);
+        }
+
+        std::size_t n_active = 0;
+
+        for (std::size_t t = 0; t < n_threads_; ++t) {
+            std::size_t p_begin = t * chunk;
+            std::size_t p_end = std::min(n_particles, p_begin + chunk);
+            if (p_begin >= p_end) break;
+
+            ++n_active;
+
+            workers_[t].submit_task([this, &x, &noises, &partial_sums,
+                                      &thread_rngs, &thread_gaussians,
+                                      &tasks_done, u, w, t, p_begin, p_end]() {
+                double local_sum = 0.0;
+                auto& local_rng = thread_rngs[t];
+                auto& local_gaussian = thread_gaussians[t];
+
+                for (std::size_t p = p_begin; p < p_end; ++p) {
+                    double sigma_n = noises[p].step();
+
+                    double f_t = u + w * sigma_n;
+
+                    double zeta_n = local_gaussian(local_rng);
+                    double dVdx_n = dVdx_(x[p]);
+
+                    // Стандартное уравнение Ланжевена:
+                    // dx/dt = -V0 * V'(x) * f(t) + sqrt(2) * xi(t)
+                    double dxdt = -V0_ * dVdx_n * f_t + sqrt2_coeff_ * zeta_n;
+
+                    x[p] += dxdt * dt_;
+                    x[p] = std::fmod(x[p], L_);
+                    if (x[p] < 0.0) x[p] += L_;
+
+                    local_sum += x[p];
+                }
+
+                partial_sums[t] = local_sum;
+                tasks_done[t].store(1, std::memory_order_release);
+            });
+        }
+
+        // Ждём завершения
+        for (std::size_t t = 0; t < n_active; ++t) {
+            while (tasks_done[t].load(std::memory_order_acquire) == 0) {
+                std::this_thread::yield();
+            }
+        }
+
+        double sum_x = 0.0;
+        for (std::size_t t = 0; t < n_active; ++t) {
+            sum_x += partial_sums[t];
+        }
+
+        double mean_x_n = sum_x / static_cast<double>(n_particles);
+
+        if (store_trajectory) {
+            res.t.push_back(static_cast<double>(n) * dt_);
+            res.mean_x.push_back(mean_x_n);
+        }
+
+        if (n > burn_in && n > 0) {
+            double dmean_x = mean_x_n - prev_mean_x;
+            if (dmean_x > L_half_) dmean_x -= L_;
+            if (dmean_x < -L_half_) dmean_x += L_;
+            sum_msd += dmean_x * dmean_x;
+            ++cnt_msd;
+        }
+
+        if (n >= burn_in) {
+            prev_mean_x = mean_x_n;
+        }
+    }
+
+    // Вычисление средней скорости
+    double t_max = (N - burn_in) * dt_;
+    if (res.mean_x.size() > burn_in + 1 && t_max > 0.0) {
+        double dx = res.mean_x.back() - res.mean_x[burn_in];
+        if (dx > L_half_) dx -= L_;
+        if (dx < -L_half_) dx += L_;
+        res.mean_velocity = dx / t_max;
+    } else {
+        res.mean_velocity = 0.0;
+    }
+
+    if (cnt_msd > 0) {
+        double mean_msd = sum_msd / static_cast<double>(cnt_msd);
+        res.diffusion_coeff = mean_msd / (2.0 * dt_);
+    } else {
+        res.diffusion_coeff = 0.0;
+    }
+
+    return res;
+}
+
+    // Геттеры
     double L() const { return L_; }
     double dt() const { return dt_; }
     double V0() const { return V0_; }
+    std::size_t num_threads() const { return n_threads_; }
 
 private:
     DVDXFunc dVdx_;
     double V0_, L_, dt_;
     ModulationType mod_type_;
     double sqrt2_coeff_;
+    double L_half_;
     std::mt19937 rng_;
     std::normal_distribution<double> gaussian_;
+    std::size_t n_threads_;
+    std::vector<WorkerThread> workers_;
 
-    // Вспомогательная функция для вычисления модуляции f(t)
-    double compute_f_t(double sigma_n, double epsilon)
-    {
+    void initialize_thread_pool() {
+        workers_.clear();
+        workers_.reserve(n_threads_);
+        for (std::size_t i = 0; i < n_threads_; ++i) {
+            workers_.emplace_back();
+        }
+    }
+
+    void shutdown_thread_pool() {
+        for (auto& w : workers_) {
+            w.stop();
+        }
+    }
+
+    inline double compute_f_t(double sigma_n, double epsilon) const {
         switch (mod_type_) {
             case ModulationType::CONSTANT:
                 return 1.0;
