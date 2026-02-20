@@ -11,6 +11,7 @@
 #include "Labs/Special/Additional/DffusionSolvers/LangevinSolver.h"
 #include "Labs/Special/Additional/NoiseGenerator/DichotomicNoise.h"
 #include "Helpers/Plotter.h"
+#include "Helpers/Timer.h"
 
 class RatchetTasks {
 
@@ -36,6 +37,8 @@ class RatchetTasks {
     }
 
 public:
+
+    /*
 
     static void taskA(double L, double dt, std::size_t N) {
 
@@ -319,71 +322,74 @@ public:
         "<v>(w)", "w (амплитуда)", "<v>");
 
 }
+    */
 
-static void taskComparisonAnalytical(double L, double dt, std::size_t N) {
+static void taskComparisonAnalyticalPaper(double dt, std::size_t N) {
+    const double L = 2.0;
 
-    double L_period = 1.0;
+    const double V1 = 3.5;
+    const double V2 = 0.5 * V1;
 
-    double V0 = 3.5;            // Масштаб потенциальной энергии
-    double V1 = V0;             // Амплитуда первой гармоники
-    double V2 = 0.5 * V0;       // Амплитуда второй гармоники
+    const double alpha  = -1./3.0;
+    const double f_plus = 1.0;
+    const double f_minus = alpha;
 
-    // Температура
-    double T = 15.0;            // Абсолютная температура (в условных единицах)
-    double kB = 1.0;            // Постоянная Больцмана (естественные единицы)
-    double kT = kB * T;         // Произведение
-    double beta = 1.0 / kT;
+    // термопараметры
+    const double T  = 15.0;
+    const double kB = 1.0;
+    const double beta = 1.0 / (kB * T);
 
-    double a = 1.0;             // Амплитуда шума
+    // свободная диффузия
+    const double D = 2.0; // kBT/friction
 
-    double tau_c = 1.0;         // τ_c — время корреляции
+    // дихотомика
+    const double a = 1.0;   // sigma = ±1
+    const double tau_c = 0.08;
 
-    double gamma_b = 0.8;  // Переходная вероятность
-    double D = 1.0 / (beta * gamma_b);  // Коэффициент диффузии
+    const double tau_plus  = tau_c;
+    const double tau_minus = tau_c;
+    const double delta = tau_minus / (tau_plus + tau_minus); // 1/2
 
-    double tau_plus = tau_c;     // τ_+ = τ_c
-    double tau_minus = tau_c;    // τ_- = τ_c
-    double tau = 1.0 / (1.0/tau_plus + 1.0/tau_minus);  // Среднее время
-    double delta = tau_minus / (tau_plus + tau_minus);
+    const auto n_particles = static_cast<std::size_t>(1e4);
+    const std::size_t burn_in = 20'000;
 
-    std::size_t n_particles = 100000;
-    std::size_t burn_in = 8'000;
+    // dV/dx для V(x)=V1 sin(2πx/L)+V2 sin(4πx/L)
+    auto dVdx = [=](double x) {
+        const double k1 = 2.0 * M_PI / L;
+        const double k2 = 4.0 * M_PI / L;
+        return V1 * k1 * std::cos(k1 * x) + V2 * k2 * std::cos(k2 * x);
+    };
 
-    double two_pi = 2.0 * M_PI;
-    double xi = (L_period / two_pi) * (L_period / two_pi) / (D * tau_c);
+    const double two_pi = 2.0 * M_PI;
+    const double xi = (L / two_pi) * (L / two_pi) / (D * 2.0 * tau_c);
 
-    double z = xi / (4.0 * delta * (1.0 - delta));
+    const double z = xi / (4.0 * delta * (1.0 - delta));
+    const double denom = (1.0 + 4.0 * z) * (1.0 + 4.0 * z) * (1.0 + z);
 
+    const double Phi1_S = (3.0 * xi * (1.0 + 2.0 * z)) / denom;
+    const double Phi2_S = (1.0 - 2.0 * delta) * (6.0 * xi * z) / denom;
 
-    double denom = (1.0 + 4.0*z) * (1.0 + 4.0*z) * (1.0 + z);
+    const double prefactor = (M_PI * D) / (4.0 * L);
+    const double v_analytical =
+        prefactor * (beta * beta * beta) * (V1 * V1) * V2
+        * (1.0 - alpha) * (1.0 - alpha)
+        * ((1.0 + alpha) * Phi1_S + (1.0 - alpha) * Phi2_S);
 
-    // Φ₁⁽ˢ⁾(ξ, δ) = 3ξ(1 + 2z) / [(1+4z)²(1+z)]
-    double Phi1_S = (3.0 * xi * (1.0 + 2.0*z)) / denom;
+    std::cout << std::setprecision(12)
+              << "Parameters:\n"
+              << "  L = " << L << "\n"
+              << "  dt = " << dt << "\n"
+              << "  N = " << N << "\n"
+              << "  T_total = " << (static_cast<double>(N) * dt) << "\n"
+              << "  T = " << T << "  beta=" << beta << "\n"
+              << "  D (free) = " << D << "\n"
+              << "  V1 = " << V1 << "  V2 = " << V2 << "\n"
+              << "  alpha (f_-)= " << alpha << " (f_+=1)\n"
+              << "аналитика скорости: " << v_analytical << "\n";
 
-
-    // Φ₂⁽ˢ⁾(ξ, δ) = (1 - 2δ) · 6ξz / [(1+4z)²(1+z)]
-    double Phi2_S = (1.0 - 2.0*delta) * (6.0 * xi * z) / denom;
-
-
-    double alpha = (V2 - 0.0) / (V1 + V2);  // Асимметрия: (V₂)/(V₁ + V₂)
-
-    // ν⁽ˢ'ᴰ⁾ = (π·D)/(4L) · β³ · V₁² · V₂ · (1-α)² · [(1+α)Φ₁⁽ˢ'ᴰ⁾ + (1-α)Φ₂⁽ˢ'ᴰ⁾]
-
-    double prefactor = (M_PI * D) / (4.0 * L_period);
-
-    double beta3 = beta * beta * beta;
-
-    double V1_sq = V1 * V1;
-
-    double asym_factor = (1.0 - alpha) * (1.0 - alpha);
-
-    double Phi_weighted = (1.0 + alpha) * Phi1_S + (1.0 - alpha) * Phi2_S;
-
-    double v_analytical = prefactor * beta3 * V1_sq * V2 * asym_factor * Phi_weighted;
-
-    LangevinSolver solver(
-        getDVdxAsymmetric(), V0, L, dt,
-        LangevinSolver::ModulationType::DICHOTOM_SYMMETRIC, 600);
+    // ---- численно ----
+    LangevinSolver solver(dVdx, L, dt, D, beta, LangevinSolver::ModulationType::TWO_LEVEL_F, 600);
+    solver.set_two_level_f(f_plus, f_minus);
 
     std::vector<DichotomicNoise> noises;
     noises.reserve(n_particles);
@@ -391,43 +397,93 @@ static void taskComparisonAnalytical(double L, double dt, std::size_t N) {
         noises.emplace_back(a, tau_c, dt, 600u + static_cast<unsigned>(p));
     }
 
-    auto res_numerical = solver.solve_ensemble_independent(
-        noises, N, n_particles, 0.0, 0.0, burn_in, true);
+    Timer<std::chrono::duration<double>> timer;
+    auto res = solver.solve_ensemble(noises, N, n_particles, 0.0, burn_in, true);
+    const double elapsed_sec = timer.elapsed();
 
-    double error_abs = std::abs(res_numerical.mean_velocity - v_analytical);
-    double error_rel = (v_analytical != 0.0)
-        ? (error_abs / std::abs(v_analytical)) * 100.0
-        : 100.0;
+    // mean_x теперь уже UNWRAPPED (важно для сравнения с v*t)
+    const auto& mean_x_unwrapped = res.mean_x;
 
-    std::size_t burn_in_idx = burn_in;
-    std::size_t T_plot_end = std::min(static_cast<std::size_t>(N), burn_in + 10000);
-    std::size_t step = std::max<std::size_t>(1, (T_plot_end - burn_in_idx) / 500);
-
-    std::vector<double> t_plot, v_numerical_plot, v_analytical_plot;
-
-    double x0_window = res_numerical.mean_x[burn_in_idx];
-
-    for (std::size_t i = burn_in_idx; i < T_plot_end; i += step) {
-        if (i < res_numerical.t.size()) {
-            t_plot.push_back(res_numerical.t[i]);
-            v_numerical_plot.push_back(res_numerical.mean_x[i]);
-
-            double t_rel = res_numerical.t[i] - res_numerical.t[burn_in_idx];
-            v_analytical_plot.push_back(x0_window + v_analytical * t_rel);
+    // full-window v по UNWRAPPED mean_x
+    double v_full = 0.0;
+    if (res.t.size() >= 2 && mean_x_unwrapped.size() == res.t.size()) {
+        const double dt_full = res.t.back() - res.t.front();
+        if (dt_full > 0.0) {
+            v_full = (mean_x_unwrapped.back() - mean_x_unwrapped.front()) / dt_full;
         }
     }
 
-    std::vector<std::vector<double>> xs = {t_plot, t_plot};
-    std::vector<std::vector<double>> ys = {v_numerical_plot, v_analytical_plot};
-    std::vector<std::string> labels = {
-        "Численное решение (ансамбль)",
-        "Аналитическое решение (формула 12)"
-    };
+    const double error_abs = std::abs(v_full - v_analytical);
+    const double error_rel = (v_analytical != 0.0)
+        ? (error_abs / std::abs(v_analytical)) * 100.0
+        : 100.0;
 
-    Plotter plotter;
-    plotter.plot(xs, ys, labels, "Время t (сек)", "Позиция x(t)");
+    std::cout << std::setprecision(12)
+              << "v_numerical (solver.mean_velocity) = " << res.mean_velocity << "\n"
+              << "v_numerical (full-window) = " << v_full << "\n"
+              << "abs error = " << error_abs << "\n"
+              << "rel error = " << error_rel << " %\n"
+              << "simulation time = " << elapsed_sec << " sec (" << elapsed_sec / 60.0 << " min)\n";
 
+    // ---- графики ----
+    // x(t): численно vs линия аналитики (только после burn-in)
+    const std::size_t step = std::max<std::size_t>(1, N / 800);
+
+    std::vector<double> t_plot, x_plot, x_an;
+    t_plot.reserve(N / step + 1);
+    x_plot.reserve(N / step + 1);
+    x_an.reserve(N / step + 1);
+
+    const std::size_t i0 = std::min<std::size_t>(
+        burn_in,
+        (res.t.size() > 0 ? (res.t.size() - 1) : 0)
+    );
+
+    const double t0  = res.t.empty() ? 0.0 : res.t[i0];
+    const double x0u = mean_x_unwrapped.empty() ? 0.0 : mean_x_unwrapped[i0];
+
+    for (std::size_t i = i0; i < res.t.size() && i < mean_x_unwrapped.size(); i += step) {
+        const double t = res.t[i];
+        t_plot.push_back(t);
+        x_plot.push_back(mean_x_unwrapped[i]);            // <-- корректные unwrapped координаты
+        x_an.push_back(x0u + v_analytical * (t - t0));    // <-- теоретическая прямая
+    }
+
+    {
+        std::vector<std::vector<double>> xs = {t_plot, t_plot};
+        std::vector<std::vector<double>> ys = {x_plot, x_an};
+        std::vector<std::string> labels = {
+            "Численное решение (ансамбль, unwrapped)",
+            "Аналитическое решение (формула 12)"
+        };
+        Plotter plotter;
+        plotter.plot(xs, ys, labels, "Время t (сек)", "Позиция x(t)");
+    }
+
+    // v(t) = (x(t)-x(t0))/(t-t0), тоже считаем только после burn-in
+    std::vector<double> t_v, v_est, v_an;
+    for (std::size_t k = 5; k < t_plot.size(); ++k) {
+        const double tt = t_plot[k];
+        const double dt_rel = tt - t0;
+        if (dt_rel <= 0.0) continue;
+
+        t_v.push_back(tt);
+        v_est.push_back((x_plot[k] - x0u) / dt_rel);
+        v_an.push_back(v_analytical);
+    }
+
+    {
+        std::vector<std::vector<double>> xs = {t_v, t_v};
+        std::vector<std::vector<double>> ys = {v_est, v_an};
+        std::vector<std::string> labels = {
+            "(<x>-<x>0)/(t-t0)",
+            "v_analytical"
+        };
+        Plotter plotter;
+        plotter.plot(xs, ys, labels, "Время t (сек)", "Скорость v(t)");
+    }
 }
+
 };
 
 #endif // NUMERICAL_METHODS_IN_PHYSICS_RATCHETTASKS_H

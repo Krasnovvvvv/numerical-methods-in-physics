@@ -18,15 +18,9 @@ int main() {
     // ==================== ПАРАМЕТРЫ ====================
     double L  = 1.0;         // Период области
     double dt = 0.001;       // Шаг интегрирования
-    std::size_t N = 16'000;   // Число шагов интегрирования
+    std::size_t N = 2'000'000;   // Число шагов интегрирования
 
-    std::cout << "\nПараметры численного решения:\n";
-    std::cout << "  L = " << L << " (период)\n";
-    std::cout << "  dt = " << dt << " (шаг интегрирования)\n";
-    std::cout << "  N = " << N << " (число шагов)\n";
-    std::cout << "  T_total = " << N * dt << " (полное время)\n";
-
-    RatchetTasks::taskA(L, dt, N);
+    /*RatchetTasks::taskA(L, dt, N);
 
     RatchetTasks::taskB(L, dt, N);
 
@@ -34,8 +28,8 @@ int main() {
 
     RatchetTasks::taskG(L, dt, N);
 
-    RatchetTasks::taskD(L, dt, N);
+    RatchetTasks::taskD(L, dt, N);*/
 
-    RatchetTasks::taskComparisonAnalytical(L, dt, N);
+    RatchetTasks::taskComparisonAnalyticalPaper(dt, N);
 
 }
