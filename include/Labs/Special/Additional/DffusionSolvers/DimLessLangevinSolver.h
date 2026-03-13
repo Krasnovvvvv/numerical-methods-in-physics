@@ -3,18 +3,14 @@
 
 #pragma once
 
-#include <atomic>
+#include <algorithm>
 #include <cmath>
 #include <condition_variable>
 #include <cstddef>
-#include <functional>
-#include <memory>
 #include <mutex>
-#include <queue>
 #include <random>
 #include <stdexcept>
 #include <thread>
-#include <utility>
 #include <vector>
 
 #include "Labs/Special/Additional/NoiseGenerator/DichotomicNoise.h"
@@ -27,244 +23,230 @@ struct EnsembleResult {
 
     std::vector<double> mean_x;
     double mean_velocity = 0.0;
+    double mean_x_final = 0.0;
 };
 
-class WorkerThread {
-    void run() {
-        while (true) {
-            std::function<void()> task;
+class CyclicBarrier {
+public:
+    explicit CyclicBarrier(std::size_t count)
+        : threshold_(count), count_(count), generation_(0) {}
 
-            {
-                std::unique_lock<std::mutex> lock(mutex_);
-                cv_.wait(lock, [this]() {
-                    return !task_queue_.empty() || should_stop_;
-                });
-                if (should_stop_ && task_queue_.empty()) break;
+    void wait() {
+        std::unique_lock<std::mutex> lock(mutex_);
+        const std::size_t gen = generation_;
 
-                task = std::move(task_queue_.front());
-                task_queue_.pop();
-                is_working_ = true;
-            }
-
-            if (task) task();
-
-            {
-                std::lock_guard<std::mutex> lock(mutex_);
-                is_working_ = false;
-                cv_.notify_one();
-            }
+        if (--count_ == 0) {
+            generation_++;
+            count_ = threshold_;
+            cv_.notify_all();
+            return;
         }
+
+        cv_.wait(lock, [this, gen]() { return generation_ != gen; });
     }
 
-    std::thread thread_;
-    std::queue<std::function<void()>> task_queue_;
+private:
     std::mutex mutex_;
     std::condition_variable cv_;
-    bool should_stop_;
-    bool is_running_;
-    bool is_working_;
+    const std::size_t threshold_;
+    std::size_t count_;
+    std::size_t generation_;
+};
 
-public:
-    WorkerThread()
-        : should_stop_(false), is_running_(true), is_working_(false) {
-        thread_ = std::thread(&WorkerThread::run, this);
-    }
-
-    WorkerThread(const WorkerThread&) = delete;
-    WorkerThread& operator=(const WorkerThread&) = delete;
-    WorkerThread(WorkerThread&&) = delete;
-    WorkerThread& operator=(WorkerThread&&) = delete;
-
-    ~WorkerThread() { stop(); }
-
-    void submit_task(std::function<void()> task) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (!is_running_) return;
-        task_queue_.push(std::move(task));
-        cv_.notify_one();
-    }
-
-    void stop() {
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (!is_running_) return;
-            should_stop_ = true;
-            is_running_ = false;
-        }
-        cv_.notify_one();
-        if (thread_.joinable()) thread_.join();
-    }
+struct alignas(64) PaddedDouble {
+    double value = 0.0;
 };
 
 class DimLessLangevinSolver {
-    void initialize_thread_pool() {
-        workers_.clear();
-        workers_.reserve(n_threads_);
-        for (std::size_t i = 0; i < n_threads_; ++i) {
-            workers_.push_back(std::make_unique<WorkerThread>());
+public:
+    explicit DimLessLangevinSolver(const RatchetParams& params,
+                                   unsigned int seed = std::random_device{}())
+        : params_(params),
+          rng_(seed),
+          dt_(params.dt),
+          sqrt_2dt_(std::sqrt(2.0 * params.dt))
+    {
+        if (params_.dt <= 0.0) {
+            throw std::invalid_argument("dt must be > 0");
         }
+
+        n_threads_ = std::thread::hardware_concurrency();
+        if (n_threads_ == 0) n_threads_ = 4;
     }
 
-    void shutdown_thread_pool() const {
-        for (auto& w : workers_) {
-            if (w) w->stop();
+    EnsembleResult solve(std::vector<DichotomicNoise>& noises,
+                         std::size_t n_particles,
+                         std::size_t total_time,
+                         std::size_t burn_in = 0,
+                         double x0 = 0.0,
+                         bool store_trajectory = true,
+                         std::size_t trajectory_stride = 1)
+    {
+        if (n_particles == 0) {
+            throw std::invalid_argument("n_particles must be > 0");
         }
+        if (noises.size() < n_particles) {
+            throw std::invalid_argument("noises.size() must be >= n_particles");
+        }
+
+        EnsembleResult result;
+        result.n_particles = n_particles;
+        result.has_trajectory = store_trajectory;
+
+        const std::size_t N = static_cast<std::size_t>(total_time / params_.dt);
+        if (N == 0) {
+            return result;
+        }
+
+        if (burn_in == 0) burn_in = N / 10;
+        if (trajectory_stride == 0) trajectory_stride = 1;
+
+        std::vector<double> xu(n_particles, x0);
+        std::vector<double> xw(n_particles, wrap_unit_(x0));
+
+        if (store_trajectory) {
+            const std::size_t reserve_size = N / trajectory_stride + 2;
+            result.sim_time.reserve(reserve_size);
+            result.mean_x.reserve(reserve_size);
+        }
+
+        const std::size_t n_active = std::min(n_threads_, n_particles);
+        const std::size_t chunk = (n_particles + n_active - 1) / n_active;
+
+        std::vector<PaddedDouble> partial_sums(n_active);
+        std::vector<std::mt19937> thread_rngs(n_active);
+
+        for (std::size_t t = 0; t < n_active; ++t) {
+            thread_rngs[t].seed(rng_() + static_cast<unsigned int>(t * 7919u + 17u));
+        }
+
+        CyclicBarrier barrier(n_active + 1);
+        std::vector<std::thread> workers;
+        workers.reserve(n_active);
+
+        for (std::size_t t = 0; t < n_active; ++t) {
+            const std::size_t p_begin = t * chunk;
+            const std::size_t p_end = std::min(n_particles, p_begin + chunk);
+
+            workers.emplace_back([this,
+                                  &xu,
+                                  &xw,
+                                  &noises,
+                                  &partial_sums,
+                                  &thread_rngs,
+                                  &barrier,
+                                  p_begin,
+                                  p_end,
+                                  t,
+                                  N]() {
+                std::normal_distribution<double> gauss(0.0, 1.0);
+                auto& local_rng = thread_rngs[t];
+
+                for (std::size_t n = 0; n < N; ++n) {
+                    double local_sum = 0.0;
+
+                    for (std::size_t p = p_begin; p < p_end; ++p) {
+                        const double sigma = noises[p].step();
+                        const double f_t = compute_f_(sigma);
+
+                        const double w_n = gauss(local_rng);
+                        const double noise = sqrt_2dt_ * w_n;
+
+                        const double dUdx_n = f_t * params_.dVdx(xw[p]);
+                        const double xu_tilde = xu[p] - dUdx_n * dt_ + noise;
+                        const double dUdx_tilde = f_t * params_.dVdx(wrap_unit_(xu_tilde));
+
+                        const double delta =
+                            -0.5 * (dUdx_n + dUdx_tilde) * dt_ + noise;
+
+                        xu[p] += delta;
+                        xw[p] = wrap_unit_(xu[p]);
+
+                        local_sum += xu[p];
+                    }
+
+                    partial_sums[t].value = local_sum;
+
+                    barrier.wait();
+                    barrier.wait();
+                }
+            });
+        }
+
+        long double sum_t = 0.0L;
+        long double sum_x = 0.0L;
+        long double sum_tt = 0.0L;
+        long double sum_tx = 0.0L;
+        std::size_t fit_count = 0;
+
+        for (std::size_t n = 0; n < N; ++n) {
+            barrier.wait();
+
+            double total_sum = 0.0;
+            for (std::size_t t = 0; t < n_active; ++t) {
+                total_sum += partial_sums[t].value;
+            }
+
+            const double mean_x = total_sum / static_cast<double>(n_particles);
+            const double time = static_cast<double>(n) * dt_;
+
+            result.mean_x_final = mean_x;
+
+            if (n >= burn_in) {
+                const long double tl = static_cast<long double>(time);
+                const long double xl = static_cast<long double>(mean_x);
+                sum_t += tl;
+                sum_x += xl;
+                sum_tt += tl * tl;
+                sum_tx += tl * xl;
+                ++fit_count;
+            }
+
+            if (store_trajectory && ((n % trajectory_stride) == 0 || n + 1 == N)) {
+                result.sim_time.push_back(time);
+                result.mean_x.push_back(mean_x);
+            }
+
+            barrier.wait();
+        }
+
+        for (auto& th : workers) {
+            if (th.joinable()) th.join();
+        }
+
+        if (fit_count >= 2) {
+            const long double denom =
+                static_cast<long double>(fit_count) * sum_tt - sum_t * sum_t;
+
+            if (std::abs(static_cast<double>(denom)) > 0.0) {
+                result.mean_velocity = static_cast<double>(
+                    (static_cast<long double>(fit_count) * sum_tx - sum_t * sum_x) / denom
+                );
+            }
+        }
+
+        return result;
     }
 
-    [[nodiscard]] inline double compute_f(double sigma) const {
-        return (sigma >= 0.0) ? 1.0 : params_.alpha;
+private:
+    static double compute_f_(const double sigma, const double alpha) noexcept {
+        return (sigma >= 0.0) ? 1.0 : alpha;
+    }
+
+    double compute_f_(const double sigma) const noexcept {
+        return compute_f_(sigma, params_.alpha);
+    }
+
+    static double wrap_unit_(double x) noexcept {
+        x -= std::floor(x);
+        return x;
     }
 
     RatchetParams params_;
     std::mt19937 rng_;
-    std::size_t n_threads_ = 2;
-    std::vector<std::unique_ptr<WorkerThread>> workers_;
-
-public:
-    explicit DimLessLangevinSolver(
-        const RatchetParams &params,
-        unsigned int seed = std::random_device{}())
-        : params_(params),
-          rng_(seed),
-          n_threads_(std::thread::hardware_concurrency()) {
-        if (n_threads_ == 0) n_threads_ = 4;
-        initialize_thread_pool();
-    }
-
-    ~DimLessLangevinSolver() { shutdown_thread_pool(); }
-
-EnsembleResult solve(
-    std::vector<DichotomicNoise>& noises,
-    std::size_t n_particles,
-    std::size_t total_time,
-    std::size_t burn_in = 0,
-    double x0 = 0.0,
-    bool store_trajectory = true) {
-
-    if (noises.size() < n_particles) {
-        throw std::invalid_argument("noises.size() must be >= n_particles");
-    }
-
-    EnsembleResult result;
-    result.n_particles = n_particles;
-    result.has_trajectory = store_trajectory;
-    result.mean_velocity = 0.0;
-
-    std::vector<double> x(n_particles, x0);
-
-    const std::size_t N = static_cast<std::size_t>(total_time / params_.dt);
-    if (burn_in == 0) burn_in = N / 10;
-
-    if (store_trajectory) {
-        result.sim_time.reserve(N);
-        result.mean_x.reserve(N);
-    }
-
-    std::vector<std::mt19937> thread_rngs(n_threads_);
-    for (std::size_t t = 0; t < n_threads_; ++t) {
-        thread_rngs[t].seed(rng_() + static_cast<unsigned int>(t));
-    }
-
-    std::vector<std::normal_distribution<double>> thread_gaussians(
-        n_threads_, std::normal_distribution<double>(0.0, 1.0));
-
-    for (std::size_t n = 0; n < N; ++n) {
-        const std::size_t chunk = (n_particles + n_threads_ - 1) / n_threads_;
-        std::vector<double> partial_sums(n_threads_, 0.0);
-        std::vector<std::atomic<int>> done(n_threads_);
-        for (auto& d : done) d.store(0, std::memory_order_relaxed);
-
-        std::size_t n_active = 0;
-
-        for (std::size_t t = 0; t < n_threads_; ++t) {
-            const std::size_t p_begin = t * chunk;
-            const std::size_t p_end = std::min(n_particles, p_begin + chunk);
-            if (p_begin >= p_end) break;
-
-            ++n_active;
-
-            workers_[t]->submit_task(
-                [this, &x, &noises, &partial_sums, &thread_rngs, &thread_gaussians,
-                 &done, t, p_begin, p_end]() {
-                    double local_sum = 0.0;
-                    auto& local_rng = thread_rngs[t];
-                    auto& gauss = thread_gaussians[t];
-
-                    for (std::size_t p = p_begin; p < p_end; ++p) {
-                        const double sigma = noises[p].step();
-                        const double f_t = compute_f(sigma);
-                        const double w_n = gauss(local_rng);
-                        const double noise = std::sqrt(2.0 * params_.dt) * w_n;
-
-                        const double dUdx_n = f_t * params_.dVdx(x[p]);
-                        const double x_tilde = x[p] - dUdx_n * params_.dt + noise;
-                        const double dUdx_tilde = f_t * params_.dVdx(x_tilde);
-                        const double delta =
-                            -0.5 * (dUdx_n + dUdx_tilde) * params_.dt + noise;
-
-                        x[p] += delta;
-                        local_sum += x[p];
-                    }
-
-                    partial_sums[t] = local_sum;
-                    done[t].store(1, std::memory_order_release);
-                });
-        }
-
-        for (std::size_t t = 0; t < n_active; ++t) {
-            while (done[t].load(std::memory_order_acquire) == 0) {
-                std::this_thread::yield();
-            }
-        }
-
-        double sum_x = 0.0;
-        for (std::size_t t = 0; t < n_active; ++t) {
-            sum_x += partial_sums[t];
-        }
-
-        const double mean_x = sum_x / static_cast<double>(n_particles);
-
-        if (store_trajectory) {
-            result.sim_time.emplace_back(static_cast<double>(n) * params_.dt);
-            result.mean_x.emplace_back(mean_x);
-        }
-    }
-
-    if (!store_trajectory || result.sim_time.size() < 2 || result.mean_x.size() < 2) {
-        return result;
-    }
-
-    const std::size_t i0 = std::min(burn_in, result.sim_time.size() - 1);
-    const std::size_t n_fit = result.sim_time.size() - i0;
-
-    if (n_fit < 2) {
-        return result;
-    }
-
-    double sum_t = 0.0;
-    double sum_xm = 0.0;
-
-    for (std::size_t i = i0; i < result.sim_time.size(); ++i) {
-        sum_t += result.sim_time[i];
-        sum_xm += result.mean_x[i];
-    }
-
-    const double mean_t = sum_t / static_cast<double>(n_fit);
-    const double mean_xm = sum_xm / static_cast<double>(n_fit);
-
-    double s_tt = 0.0;
-    double s_tx = 0.0;
-
-    for (std::size_t i = i0; i < result.sim_time.size(); ++i) {
-        const double dt = result.sim_time[i] - mean_t;
-        const double dx = result.mean_x[i] - mean_xm;
-        s_tt += dt * dt;
-        s_tx += dt * dx;
-    }
-
-    result.mean_velocity = (s_tt > 0.0) ? (s_tx / s_tt) : 0.0;
-    return result;
-}
+    std::size_t n_threads_ = 4;
+    double dt_ = 0.0;
+    double sqrt_2dt_ = 0.0;
 };
 
-#endif //NUMERICAL_METHODS_IN_PHYSICS_DIMLESSLANGEVINSOLVER_H
+#endif // NUMERICAL_METHODS_IN_PHYSICS_DIMLESSLANGEVINSOLVER_H
