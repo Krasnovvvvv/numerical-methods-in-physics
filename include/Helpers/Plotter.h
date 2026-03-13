@@ -11,7 +11,8 @@
 
 class Plotter {
 public:
-    using ExpectedCurveFunc = std::function<std::vector<double>(const std::vector<double> &,const std::vector<double> &)>;
+    using ExpectedCurveFunc = std::function<std::vector<double>(
+        const std::vector<double> &,const std::vector<double> &)>;
 
     void plot(const std::vector<double>& x,
               const std::vector<double>& y,
@@ -37,14 +38,20 @@ public:
             lines[0]->marker("o").marker_size(8).color("blue").display_name(label);
             lines[1]->line_style("--").color("red").display_name("Expected");
 
-            double min_y = std::min(*std::min_element(y.begin(), y.end()), *std::min_element(y_exp.begin(), y_exp.end()));
-            double max_y = std::max(*std::max_element(y.begin(), y.end()), *std::max_element(y_exp.begin(), y_exp.end()));
+            double min_y = std::min(
+                *std::min_element(y.begin(), y.end()),
+                *std::min_element(y_exp.begin(), y_exp.end())
+                );
+            double max_y = std::max(
+                *std::max_element(y.begin(), y.end()),
+                *std::max_element(y_exp.begin(), y_exp.end())
+                );
             ylim({min_y - 0.1 * std::abs(min_y), max_y + 0.1 * std::abs(max_y)});
         } else {
             auto p = matplot::plot(x, y);
 
             if(logarithmic)
-                p = matplot::loglog(x,y);
+                p = loglog(x,y);
 
             p->line_width(2).color("blue").display_name(label);
 
@@ -56,7 +63,7 @@ public:
         xlabel(x_label);
         ylabel(y_label);
         legend()->font_size(10);
-        xtickangle(45);
+        xtickangle(0);
         grid(true);
         show();
     }
@@ -81,7 +88,7 @@ public:
         xlabel(x_label);
         ylabel(y_label);
         legend()->font_size(10);
-        xtickangle(45);
+        xtickangle(0);
         grid(true);
         show();
         hold(off);
