@@ -3,11 +3,11 @@
 int main() {
     try {
         CylinderHeatProblem problem;
-        problem.H = 1.0;       // l / a
-        problem.q = 65;       // dT/dz|_{z=0} = -q
-        problem.theta = 5.0;   // T|_{z=H} = theta
+        problem.H = 2.0;       // l / a
+        problem.q = 5;       // dT/dz|_{z=0} = -q
+        problem.theta = 10.0;   // T|_{z=H} = theta
         problem.rhs = [](double r, double z) {
-            return 0;
+            return 10;
         };
 
         EigenCGSolver solver(1e-12, 10000);
