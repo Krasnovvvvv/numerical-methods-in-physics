@@ -32,7 +32,7 @@ public:
         : threshold_(count), count_(count), generation_(0) {}
 
     void wait() {
-        std::unique_lock<std::mutex> lock(mutex_);
+        std::unique_lock lock(mutex_);
         const std::size_t gen = generation_;
 
         if (--count_ == 0) {
@@ -60,9 +60,9 @@ struct alignas(64) PaddedDouble {
 class DimLessLangevinSolver {
 public:
     explicit DimLessLangevinSolver(const RatchetParams& params,
-                                   unsigned int seed = std::random_device{}())
+                                   unsigned int gaussian_base_seed = 1600u)
         : params_(params),
-          rng_(seed),
+          gaussian_base_seed_(gaussian_base_seed),
           dt_(params.dt),
           sqrt_2dt_(std::sqrt(2.0 * params.dt))
     {
@@ -80,8 +80,7 @@ public:
                          std::size_t burn_in = 0,
                          double x0 = 0.0,
                          bool store_trajectory = true,
-                         std::size_t trajectory_stride = 1)
-    {
+                         std::size_t trajectory_stride = 1) const {
         if (n_particles == 0) {
             throw std::invalid_argument("n_particles must be > 0");
         }
@@ -93,7 +92,7 @@ public:
         result.n_particles = n_particles;
         result.has_trajectory = store_trajectory;
 
-        const std::size_t N = static_cast<std::size_t>(total_time / params_.dt);
+        const auto N = static_cast<std::size_t>(total_time / params_.dt);
         if (N == 0) {
             return result;
         }
@@ -101,8 +100,8 @@ public:
         if (burn_in == 0) burn_in = N / 10;
         if (trajectory_stride == 0) trajectory_stride = 1;
 
-        std::vector<double> xu(n_particles, x0);
-        std::vector<double> xw(n_particles, wrap_unit_(x0));
+        std::vector xu(n_particles, x0);
+        std::vector xw(n_particles, wrap_unit_(x0));
 
         if (store_trajectory) {
             const std::size_t reserve_size = N / trajectory_stride + 2;
@@ -114,10 +113,15 @@ public:
         const std::size_t chunk = (n_particles + n_active - 1) / n_active;
 
         std::vector<PaddedDouble> partial_sums(n_active);
-        std::vector<std::mt19937> thread_rngs(n_active);
 
-        for (std::size_t t = 0; t < n_active; ++t) {
-            thread_rngs[t].seed(rng_() + static_cast<unsigned int>(t * 7919u + 17u));
+        std::vector<std::mt19937> gaussian_rngs(n_particles);
+        std::vector gaussian_dists(
+            n_particles,
+            std::normal_distribution(0.0, 1.0)
+        );
+
+        for (std::size_t p = 0; p < n_particles; ++p) {
+            gaussian_rngs[p] = make_particle_rng_(gaussian_base_seed_, p, 0xA341316Cu);
         }
 
         CyclicBarrier barrier(n_active + 1);
@@ -132,16 +136,14 @@ public:
                                   &xu,
                                   &xw,
                                   &noises,
+                                  &gaussian_rngs,
+                                  &gaussian_dists,
                                   &partial_sums,
-                                  &thread_rngs,
                                   &barrier,
                                   p_begin,
                                   p_end,
                                   t,
                                   N]() {
-                std::normal_distribution<double> gauss(0.0, 1.0);
-                auto& local_rng = thread_rngs[t];
-
                 for (std::size_t n = 0; n < N; ++n) {
                     double local_sum = 0.0;
 
@@ -149,7 +151,10 @@ public:
                         const double sigma = noises[p].step();
                         const double f_t = compute_f_(sigma);
 
-                        const double w_n = gauss(local_rng);
+                        auto& rng  = gaussian_rngs[p];
+                        auto& dist = gaussian_dists[p];
+
+                        const double w_n = dist(rng);
                         const double noise = sqrt_2dt_ * w_n;
 
                         const double dUdx_n = f_t * params_.dVdx(xw[p]);
@@ -193,8 +198,8 @@ public:
             result.mean_x_final = mean_x;
 
             if (n >= burn_in) {
-                const long double tl = static_cast<long double>(time);
-                const long double xl = static_cast<long double>(mean_x);
+                const long double tl = time;
+                const long double xl = mean_x;
                 sum_t += tl;
                 sum_x += xl;
                 sum_tt += tl * tl;
@@ -233,7 +238,7 @@ private:
         return (sigma >= 0.0) ? 1.0 : alpha;
     }
 
-    double compute_f_(const double sigma) const noexcept {
+    [[nodiscard]] double compute_f_(const double sigma) const noexcept {
         return compute_f_(sigma, params_.alpha);
     }
 
@@ -242,8 +247,27 @@ private:
         return x;
     }
 
+    static std::mt19937 make_particle_rng_(unsigned int base_seed,
+                                           std::size_t particle_index,
+                                           std::uint32_t stream_tag)
+    {
+        const auto p64 = static_cast<std::uint64_t>(particle_index);
+
+        std::seed_seq seq{
+            static_cast<std::uint32_t>(base_seed),
+            static_cast<std::uint32_t>(stream_tag),
+            static_cast<std::uint32_t>(p64 & 0xFFFFFFFFu),
+            static_cast<std::uint32_t>((p64 >> 32) & 0xFFFFFFFFu),
+            0x9E3779B9u,
+            0x85EBCA6Bu,
+            0xC2B2AE35u
+        };
+
+        return std::mt19937(seq);
+    }
+
     RatchetParams params_;
-    std::mt19937 rng_;
+    unsigned int gaussian_base_seed_ = 1600u;
     std::size_t n_threads_ = 4;
     double dt_ = 0.0;
     double sqrt_2dt_ = 0.0;

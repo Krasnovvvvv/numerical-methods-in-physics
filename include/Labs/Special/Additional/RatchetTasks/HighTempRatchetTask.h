@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <vector>
@@ -23,6 +24,7 @@ class HighTempRatchetTask {
     std::size_t total_time_;
     bool build_plot_;
     std::size_t max_plot_points_;
+    unsigned int run_seed_;
 
 public:
     HighTempRatchetTask(Plotter& plotter,
@@ -30,13 +32,15 @@ public:
                         std::size_t n_particles,
                         std::size_t total_time,
                         bool build_plot = true,
-                        std::size_t max_plot_points = 800)
+                        std::size_t max_plot_points = 800,
+                        unsigned int run_seed = 1u)
         : plotter_(plotter),
           params_(params),
           n_particles_(n_particles),
           total_time_(total_time),
           build_plot_(build_plot),
-          max_plot_points_(max_plot_points) {}
+          max_plot_points_(max_plot_points),
+          run_seed_(run_seed) {}
 
     void run() {
         auto F1 = [](const double xi) -> double {
@@ -45,7 +49,8 @@ public:
         };
 
         const double xi = 1.0 / (4.0 * M_PI * M_PI * params_.epsilon);
-        double v_analytical =
+
+        const double v_analytical =
             0.25 * M_PI * params_.V1 * params_.V1 * params_.V2 *
             (1.0 - params_.alpha) * (1.0 - params_.alpha) * (1.0 + params_.alpha) *
             F1(xi);
@@ -56,21 +61,32 @@ public:
                   << "Velocity (analytical): " << v_analytical << "\n";
 
         std::cout << std::setprecision(12)
-          << "Velocity (analytical, adjusted): " << v_analytical5 << "\n";
+                  << "Velocity (analytical, adjusted): " << v_analytical5 << "\n";
 
-        /*if (v_analytical5 < v_analytical)
-            v_analytical = v_analytical5;*/
+        const unsigned int base_seed_dicho = mix_seed_
+        (
+            600u, run_seed_, 0x13579BDFu
+        );
+        const unsigned int base_seed_gauss = mix_seed_
+        (
+            1600u, run_seed_, 0x2468ACE1u
+        );
 
-        DimLessLangevinSolver solver(params_, 600u);
+        DimLessLangevinSolver solver(params_, base_seed_gauss);
 
         std::vector<DichotomicNoise> noises;
         noises.reserve(n_particles_);
+
         for (std::size_t p = 0; p < n_particles_; ++p) {
-            noises.emplace_back(params_.a, params_.epsilon, params_.dt,
-                                600u + static_cast<unsigned int>(p));
+            noises.emplace_back(
+                params_.a,
+                params_.epsilon,
+                params_.dt,
+                make_particle_seed_(base_seed_dicho, p, 0xA5A5A5A5u)
+            );
         }
 
-        const std::size_t N = static_cast<std::size_t>(total_time_ / params_.dt);
+        const auto N = static_cast<std::size_t>(total_time_ / params_.dt);
         const std::size_t burn_in = (N > 0) ? (N / 10) : 0;
 
         const bool store_trajectory = build_plot_;
@@ -80,6 +96,7 @@ public:
                 : 1;
 
         Timer<std::chrono::duration<double>> timer;
+
         auto solution = solver.solve(
             noises,
             n_particles_,
@@ -89,18 +106,8 @@ public:
             store_trajectory,
             trajectory_stride
         );
-        const double elapsed = timer.elapsed();
 
-        double v_full = 0.0;
-        if (solution.has_trajectory &&
-            solution.sim_time.size() >= 2 &&
-            solution.mean_x.size() == solution.sim_time.size())
-        {
-            const double dt_full = solution.sim_time.back() - solution.sim_time.front();
-            if (dt_full > 0.0) {
-                v_full = (solution.mean_x.back() - solution.mean_x.front()) / dt_full;
-            }
-        }
+        const double elapsed = timer.elapsed();
 
         const double error_abs = std::abs(solution.mean_velocity - v_analytical);
         const double error_rel = (v_analytical != 0.0)
@@ -110,15 +117,13 @@ public:
         std::cout << std::setprecision(12)
                   << "Velocity (numerical, regression): " << solution.mean_velocity << "\n";
 
-        if (solution.has_trajectory) {
-            std::cout << "Velocity (full-window): " << v_full << "\n";
-        }
-
         std::cout << "Abs error: " << error_abs << "\n"
                   << "Relative error: " << error_rel << " %\n"
-                  << "Simulation time: " << elapsed << " sec (" << elapsed / 60.0 << " min)\n";
+                  << "Simulation time: " << elapsed / 60.0 << " min\n";
 
-        if (!solution.has_trajectory || solution.sim_time.size() < 2 || solution.mean_x.size() < 2) {
+        if (!solution.has_trajectory
+            || solution.sim_time.size() < 2
+            || solution.mean_x.size() < 2) {
             return;
         }
 
@@ -130,13 +135,14 @@ public:
 
         const double t0 = t_plot.front();
         const double x0u = x_plot.front();
+
         for (double t : t_plot) {
             x_an.push_back(x0u + v_analytical * (t - t0));
             x_an_corr.push_back(x0u + v_analytical5 * (t - t0));
         }
 
-        std::vector<std::vector<double>> xs = {t_plot, t_plot, t_plot};
-        std::vector<std::vector<double>> ys = {x_plot, x_an, x_an_corr};
+        std::vector xs = {t_plot, t_plot, t_plot};
+        std::vector ys = {x_plot, x_an, x_an_corr};
         std::vector<std::string> labels = {
             "Numerical",
             "Analytical",
@@ -144,6 +150,45 @@ public:
         };
 
         plotter_.plot(xs, ys, labels, "t/{tau_D}", "{x / L}");
+    }
+
+private:
+    static unsigned int mix_seed_(unsigned int base,
+                                  unsigned int run_seed,
+                                  std::uint32_t tag)
+    {
+        std::seed_seq seq{
+            static_cast<std::uint32_t>(base),
+            static_cast<std::uint32_t>(run_seed),
+            static_cast<std::uint32_t>(tag),
+            0x9E3779B9u,
+            0x85EBCA6Bu,
+            0xC2B2AE35u
+        };
+
+        std::uint32_t out[1];
+        seq.generate(std::begin(out), std::end(out));
+        return static_cast<unsigned int>(out[0]);
+    }
+
+    static unsigned int make_particle_seed_(unsigned int base_seed,
+                                            std::size_t particle_index,
+                                            std::uint32_t tag)
+    {
+        const auto p64 = static_cast<std::uint64_t>(particle_index);
+
+        std::seed_seq seq{
+            static_cast<std::uint32_t>(base_seed),
+            static_cast<std::uint32_t>(tag),
+            static_cast<std::uint32_t>(p64 & 0xFFFFFFFFu),
+            static_cast<std::uint32_t>((p64 >> 32) & 0xFFFFFFFFu),
+            0x517CC1B7u,
+            0xD2B74407u
+        };
+
+        std::uint32_t out[1];
+        seq.generate(std::begin(out), std::end(out));
+        return static_cast<unsigned int>(out[0]);
     }
 };
 
