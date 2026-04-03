@@ -7,16 +7,15 @@ int main() {
     double dt = 0.001;
     std::size_t N = 10000;
 
-    std::vector<double> tau_list = {0.5, 0.1, 0.05};
+    std::vector tau_list = {0.5, 0.1, 0.05};
 
     Plotter plotter;
 
-    std::vector<std::unique_ptr<INoiseTask>> tasks;
-    tasks.push_back(std::make_unique<NoiseProfileTask>(
-        a, a, dt, N, tau_list, plotter));
+    std::unique_ptr<INoiseTask> task = std::make_unique<NoiseProfileTask>(
+        a, a, dt, N, tau_list, plotter
+    );
 
-    for (auto& task : tasks) {
-        std::cout << "Running task: " << task->name() << "\n";
-        task->run();
-    }
+    std::cout << "Running task: " << task->name() << "\n";
+
+    task->run();
 }
