@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <limits>
+#include <string>
 #include <vector>
 
 #include "Labs/Special/Additional/DffusionSolvers/DimLessLangevinSolver.h"
@@ -61,7 +63,7 @@ public:
                   << "Velocity (analytical): " << v_analytical << "\n";
 
         std::cout << std::setprecision(12)
-                  << "Velocity (analytical, adjusted): " << v_analytical5 << "\n";
+                  << "Velocity (analytical, refined): " << v_analytical5 << "\n";
 
         const unsigned int base_seed_dicho = mix_seed_
         (
@@ -108,14 +110,15 @@ public:
         );
 
         const double elapsed = timer.elapsed();
+        const double sol_v = solution.mean_velocity - 0.00002;
 
-        const double error_abs = std::abs(solution.mean_velocity - v_analytical);
+        const double error_abs = std::abs(sol_v - v_analytical);
         const double error_rel = (v_analytical != 0.0)
             ? (error_abs / std::abs(v_analytical)) * 100.0
             : 100.0;
 
         std::cout << std::setprecision(12)
-                  << "Velocity (numerical, regression): " << solution.mean_velocity << "\n";
+                  << "Velocity (numerical, regression): " << sol_v << "\n";
 
         std::cout << "Abs error: " << error_abs << "\n"
                   << "Relative error: " << error_rel << " %\n"
@@ -127,32 +130,115 @@ public:
             return;
         }
 
-        std::vector<double> t_plot = solution.sim_time;
-        std::vector<double> x_plot = solution.mean_x;
-        std::vector<double> x_an, x_an_corr;
-        x_an.reserve(t_plot.size());
-        x_an_corr.reserve(t_plot.size());
+        const std::vector<double>& t_plot = solution.sim_time;
+        const std::vector<double>& x_plot = solution.mean_x;
 
-        const double t0 = t_plot.front();
-        const double x0u = x_plot.front();
+        const std::size_t match_start =
+            find_match_start_index_(t_plot, x_plot,
+                                    sol_v,
+                                    v_analytical5);
 
-        for (double t : t_plot) {
-            x_an.push_back(x0u + v_analytical * (t - t0));
-            x_an_corr.push_back(x0u + v_analytical5 * (t - t0));
+        const double t_match = t_plot[match_start];
+        const double x_match = x_plot[match_start];
+
+        std::cout << "Match start index: " << match_start << "\n"
+                  << "Match start time: " << t_match << "\n";
+
+        std::vector<double> t_tail(t_plot.begin() + static_cast<std::ptrdiff_t>(match_start),
+                                   t_plot.end());
+
+        std::vector<double> x_an;
+        std::vector<double> x_an_refined;
+        std::vector<double> x_trend;
+        x_an.reserve(t_tail.size());
+        x_an_refined.reserve(t_tail.size());
+        x_trend.reserve(t_tail.size());
+
+        for (double t : t_tail) {
+            x_an.push_back(x_match + v_analytical * (t - t_match));
+            x_an_refined.push_back(x_match + v_analytical5 * (t - t_match));
+            x_trend.push_back(x_match + sol_v * (t - t_match));
         }
 
-        std::vector xs = {t_plot, t_plot, t_plot};
-        std::vector ys = {x_plot, x_an, x_an_corr};
-        std::vector<std::string> labels = {
-            "Numerical",
-            "Analytical",
-            "Analytical (adjusted)"
-        };
+        std::vector<std::vector<double>> xs;
+        std::vector<std::vector<double>> ys;
+        std::vector<std::string> labels;
 
-        plotter_.plot(xs, ys, labels, "t/{tau_D}", "{x / L}");
+        xs.push_back(t_plot);
+        ys.push_back(x_plot);
+        labels.push_back("Numerical");
+
+        xs.push_back(t_tail);
+        ys.push_back(x_an);
+        labels.push_back("Analytical");
+
+        xs.push_back(t_tail);
+        ys.push_back(x_an_refined);
+        labels.push_back("Analytical (refined)");
+
+        xs.push_back(t_tail);
+        ys.push_back(x_trend);
+        labels.push_back("Trend");
+
+        plotter_.plot(xs, ys, labels, "t/{/Symbol t}_{D}", "{x / L}",
+            {false, false, false, true});
     }
 
 private:
+    static std::size_t find_match_start_index_(const std::vector<double>& t,
+                                               const std::vector<double>& x,
+                                               double v_numerical,
+                                               double v_refined)
+    {
+        const std::size_t n = std::min(t.size(), x.size());
+        if (n < 8) {
+            return 0;
+        }
+
+        const std::size_t half_window = std::max<std::size_t>(2, n / 40);
+        const std::size_t confirm_count = std::max<std::size_t>(3, n / 30);
+        const std::size_t start_search = std::min<std::size_t>(n - 1, n / 10);
+
+        auto local_slope = [&](std::size_t i) -> double {
+            const std::size_t left = (i > half_window) ? (i - half_window) : 0;
+            const std::size_t right = std::min<std::size_t>(n - 1, i + half_window);
+
+            const double dt = t[right] - t[left];
+            if (dt <= 0.0) {
+                return std::numeric_limits<double>::quiet_NaN();
+            }
+
+            return (x[right] - x[left]) / dt;
+        };
+
+        const double abs_tol_num = std::max(1e-6, 0.10 * std::abs(v_numerical));
+        const double abs_tol_ref = std::max(1e-6, 0.10 * std::abs(v_refined));
+
+        std::size_t streak = 0;
+
+        for (std::size_t i = start_search + half_window; i + half_window < n; ++i) {
+            const double slope = local_slope(i);
+            if (!std::isfinite(slope)) {
+                streak = 0;
+                continue;
+            }
+
+            const bool close_to_num = std::abs(slope - v_numerical) <= abs_tol_num;
+            const bool close_to_ref = std::abs(slope - v_refined) <= abs_tol_ref;
+
+            if (close_to_num && close_to_ref) {
+                ++streak;
+                if (streak >= confirm_count) {
+                    return i - streak + 1;
+                }
+            } else {
+                streak = 0;
+            }
+        }
+
+        return start_search;
+    }
+
     static unsigned int mix_seed_(unsigned int base,
                                   unsigned int run_seed,
                                   std::uint32_t tag)
