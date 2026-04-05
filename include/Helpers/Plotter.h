@@ -69,25 +69,34 @@ public:
     }
 
     void plot(const std::vector<std::vector<double>>& xs,
-                    const std::vector<std::vector<double>>& ys,
-                    const std::vector<std::string>& labels,
-                    const std::string& x_label,
-                    const std::string& y_label)
+          const std::vector<std::vector<double>>& ys,
+          const std::vector<std::string>& labels,
+          const std::string& x_label,
+          const std::string& y_label,
+          const std::vector<bool>& dashed_flags = {})
     {
         using namespace matplot;
         figure();
         hold(on);
 
-        for(size_t i = 0; i < xs.size(); ++i) {
+        for (size_t i = 0; i < xs.size(); ++i) {
             auto l = matplot::plot(xs[i], ys[i]);
+
             if (!labels.empty() && i < labels.size())
                 l->display_name(labels[i]);
+
             l->line_width(2);
+
+            if (!dashed_flags.empty() && i < dashed_flags.size() && dashed_flags[i]) {
+                l->line_width(3);
+                l->line_style("--");
+            }
         }
 
         xlabel(x_label);
         ylabel(y_label);
         legend()->font_size(10);
+        legend() -> location(legend::general_alignment::topleft);
         xtickangle(0);
         grid(true);
         show();
