@@ -45,144 +45,162 @@ public:
           run_seed_(run_seed) {}
 
     void run() {
-        auto F1 = [](const double xi) -> double {
-            return (3.0 * xi * (1.0 + 2.0 * xi)) /
-                   ((1.0 + 4.0 * xi) * (1.0 + 4.0 * xi) * (1.0 + xi));
-        };
+    auto F1 = [](const double xi) -> double {
+        return (3.0 * xi * (1.0 + 2.0 * xi)) /
+               ((1.0 + 4.0 * xi) * (1.0 + 4.0 * xi) * (1.0 + xi));
+    };
 
-        const double xi = 1.0 / (4.0 * M_PI * M_PI * params_.epsilon);
+    const double xi = 1.0 / (4.0 * M_PI * M_PI * params_.epsilon);
 
-        const double v_analytical =
-            0.25 * M_PI * params_.V1 * params_.V1 * params_.V2 *
-            (1.0 - params_.alpha) * (1.0 - params_.alpha) * (1.0 + params_.alpha) *
-            F1(xi);
+    const double v_analytical =
+        0.25 * M_PI * params_.V1 * params_.V1 * params_.V2 *
+        (1.0 - params_.alpha) * (1.0 - params_.alpha) * (1.0 + params_.alpha) *
+        F1(xi);
 
-        const double v_analytical5 = highTempVelocity5(params_);
+    const double v_analytical5 = highTempVelocity5(params_);
 
-        std::cout << std::setprecision(12)
-                  << "Velocity (analytical): " << v_analytical << "\n";
+    std::cout << std::setprecision(12)
+              << "Velocity (analytical): " << v_analytical << "\n";
 
-        std::cout << std::setprecision(12)
-                  << "Velocity (analytical, refined): " << v_analytical5 << "\n";
+    std::cout << std::setprecision(12)
+              << "Velocity (analytical, refined): " << v_analytical5 << "\n";
 
-        const unsigned int base_seed_dicho = mix_seed_
-        (
-            600u, run_seed_, 0x13579BDFu
+    const unsigned int base_seed_dicho = mix_seed_
+    (
+        600u, run_seed_, 0x13579BDFu
+    );
+    const unsigned int base_seed_gauss = mix_seed_
+    (
+        1600u, run_seed_, 0x2468ACE1u
+    );
+
+    DimLessLangevinSolver solver(params_, base_seed_gauss);
+
+    std::vector<DichotomicNoise> noises;
+    noises.reserve(n_particles_);
+
+    for (std::size_t p = 0; p < n_particles_; ++p) {
+        noises.emplace_back(
+            params_.a,
+            params_.epsilon,
+            params_.dt,
+            make_particle_seed_(base_seed_dicho, p, 0xA5A5A5A5u)
         );
-        const unsigned int base_seed_gauss = mix_seed_
-        (
-            1600u, run_seed_, 0x2468ACE1u
-        );
-
-        DimLessLangevinSolver solver(params_, base_seed_gauss);
-
-        std::vector<DichotomicNoise> noises;
-        noises.reserve(n_particles_);
-
-        for (std::size_t p = 0; p < n_particles_; ++p) {
-            noises.emplace_back(
-                params_.a,
-                params_.epsilon,
-                params_.dt,
-                make_particle_seed_(base_seed_dicho, p, 0xA5A5A5A5u)
-            );
-        }
-
-        const auto N = static_cast<std::size_t>(total_time_ / params_.dt);
-        const std::size_t burn_in = (N > 0) ? (N / 10) : 0;
-
-        const bool store_trajectory = build_plot_;
-        const std::size_t trajectory_stride =
-            store_trajectory
-                ? std::max<std::size_t>(1, N / std::max<std::size_t>(1, max_plot_points_))
-                : 1;
-
-        Timer<std::chrono::duration<double>> timer;
-
-        auto solution = solver.solve(
-            noises,
-            n_particles_,
-            total_time_,
-            burn_in,
-            0.0,
-            store_trajectory,
-            trajectory_stride
-        );
-
-        const double elapsed = timer.elapsed();
-        const double sol_v = solution.mean_velocity - 0.00002;
-
-        const double error_abs = std::abs(sol_v - v_analytical);
-        const double error_rel = (v_analytical != 0.0)
-            ? (error_abs / std::abs(v_analytical)) * 100.0
-            : 100.0;
-
-        std::cout << std::setprecision(12)
-                  << "Velocity (numerical, regression): " << sol_v << "\n";
-
-        std::cout << "Abs error: " << error_abs << "\n"
-                  << "Relative error: " << error_rel << " %\n"
-                  << "Simulation time: " << elapsed / 60.0 << " min\n";
-
-        if (!solution.has_trajectory
-            || solution.sim_time.size() < 2
-            || solution.mean_x.size() < 2) {
-            return;
-        }
-
-        const std::vector<double>& t_plot = solution.sim_time;
-        const std::vector<double>& x_plot = solution.mean_x;
-
-        const std::size_t match_start =
-            find_match_start_index_(t_plot, x_plot,
-                                    sol_v,
-                                    v_analytical5);
-
-        const double t_match = t_plot[match_start];
-        const double x_match = x_plot[match_start];
-
-        std::cout << "Match start index: " << match_start << "\n"
-                  << "Match start time: " << t_match << "\n";
-
-        std::vector<double> t_tail(t_plot.begin() + static_cast<std::ptrdiff_t>(match_start),
-                                   t_plot.end());
-
-        std::vector<double> x_an;
-        std::vector<double> x_an_refined;
-        std::vector<double> x_trend;
-        x_an.reserve(t_tail.size());
-        x_an_refined.reserve(t_tail.size());
-        x_trend.reserve(t_tail.size());
-
-        for (double t : t_tail) {
-            x_an.push_back(x_match + v_analytical * (t - t_match));
-            x_an_refined.push_back(x_match + v_analytical5 * (t - t_match));
-            x_trend.push_back(x_match + sol_v * (t - t_match));
-        }
-
-        std::vector<std::vector<double>> xs;
-        std::vector<std::vector<double>> ys;
-        std::vector<std::string> labels;
-
-        xs.push_back(t_plot);
-        ys.push_back(x_plot);
-        labels.push_back("Numerical");
-
-        xs.push_back(t_tail);
-        ys.push_back(x_an);
-        labels.push_back("Analytical");
-
-        xs.push_back(t_tail);
-        ys.push_back(x_an_refined);
-        labels.push_back("Analytical (refined)");
-
-        xs.push_back(t_tail);
-        ys.push_back(x_trend);
-        labels.push_back("Trend");
-
-        plotter_.plot(xs, ys, labels, "t/{/Symbol t}_{D}", "{x / L}",
-            {false, false, false, true});
     }
+
+    const auto N = static_cast<std::size_t>(total_time_ / params_.dt);
+    const std::size_t burn_in = (N > 0) ? (N / 10) : 0;
+
+    const bool store_trajectory = build_plot_;
+    const std::size_t trajectory_stride =
+        store_trajectory
+            ? std::max<std::size_t>(1, N / std::max<std::size_t>(1, max_plot_points_))
+            : 1;
+
+    Timer<std::chrono::duration<double>> timer;
+
+    auto solution = solver.solve(
+        noises,
+        n_particles_,
+        total_time_,
+        burn_in,
+        0.0,
+        store_trajectory,
+        trajectory_stride
+    );
+
+    const double elapsed = timer.elapsed();
+    const double sol_v = solution.mean_velocity;
+
+    const double error_abs = std::abs(sol_v - v_analytical);
+    const double error_rel = (v_analytical != 0.0)
+        ? (error_abs / std::abs(v_analytical)) * 100.0
+        : 100.0;
+
+    std::cout << std::setprecision(12)
+              << "Velocity (numerical, regression): " << sol_v << "\n";
+
+    std::cout << "Abs error: " << error_abs << "\n"
+              << "Relative error: " << error_rel << " %\n"
+              << "Simulation time: " << elapsed / 60.0 << " min\n";
+
+    if (!solution.has_trajectory
+        || solution.sim_time.size() < 2
+        || solution.mean_x.size() < 2) {
+        return;
+    }
+
+    const std::vector<double>& t_plot = solution.sim_time;
+    const std::vector<double>& x_plot = solution.mean_x;
+
+    const std::size_t match_start =
+        find_match_start_index_(t_plot, x_plot,
+                                sol_v,
+                                v_analytical5);
+
+    const double t_match = t_plot[match_start];
+    const double x_match = x_plot[match_start];
+
+    std::cout << "Match start index: " << match_start << "\n"
+              << "Match start time: " << t_match << "\n";
+
+    constexpr double fallback_trend_shift = 0.0;
+
+    double trend_shift = fallback_trend_shift;
+    if (std::isfinite(t_match) && std::isfinite(x_match)) {
+        trend_shift = x_match - sol_v * t_match;
+    }
+    if (!std::isfinite(trend_shift)) {
+        trend_shift = fallback_trend_shift;
+    }
+
+    std::cout << "Trend vertical shift: " << trend_shift << "\n";
+
+    std::vector<double> t_tail(
+        t_plot.begin() + static_cast<std::ptrdiff_t>(match_start),
+        t_plot.end()
+    );
+
+    std::vector<double> x_an;
+    std::vector<double> x_an_refined;
+    std::vector<double> x_trend;
+
+    x_an.reserve(t_plot.size());
+    x_an_refined.reserve(t_plot.size());
+    x_trend.reserve(t_tail.size());
+
+    for (double t : t_plot) {
+        x_an.push_back(v_analytical * t);
+        x_an_refined.push_back(v_analytical5 * t);
+    }
+
+    for (double t : t_tail) {
+        x_trend.push_back(trend_shift + sol_v * t);
+    }
+
+    std::vector<std::vector<double>> xs;
+    std::vector<std::vector<double>> ys;
+    std::vector<std::string> labels;
+
+    xs.push_back(t_plot);
+    ys.push_back(x_plot);
+    labels.push_back("Numerical");
+
+    xs.push_back(t_plot);
+    ys.push_back(x_an);
+    labels.push_back("Analytical");
+
+    xs.push_back(t_plot);
+    ys.push_back(x_an_refined);
+    labels.push_back("Analytical (refined)");
+
+    xs.push_back(t_tail);
+    ys.push_back(x_trend);
+    labels.push_back("Trend");
+
+    plotter_.plot(xs, ys, labels, "t/{/Symbol t}_{D}", "{x / L}",
+                  {false, false, false, true});
+}
 
 private:
     static std::size_t find_match_start_index_(const std::vector<double>& t,
