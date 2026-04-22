@@ -49,4 +49,4 @@ function(special_add)
     )
 endfunction()
 
-special_add()
+add_lab(6 ON)
