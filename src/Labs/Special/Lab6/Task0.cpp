@@ -1,11 +1,3 @@
-/// Задача 0: Реализация 1D FDTD алгоритма
-///
-/// Требуемые графики:
-/// 1. E_y(x) в разные моменты: Гаусс, soft source, БЕЗ PML — видны отражения от границ
-/// 2. E_y(x) в разные моменты: Гаусс, soft source, С PML — волна поглощается
-/// 3. CW-источник, soft source, с PML — стационарная волна
-/// 4. Сравнение soft source vs current source — показать что разницы нет
-
 #include "Labs/Special/Lab6/Base/Grid.h"
 #include "Labs/Special/Lab6/Base/Source.h"
 #include "Labs/Special/Lab6/Solver/FDTDSolver.h"
@@ -27,14 +19,13 @@ struct Snapshot {
 
 std::vector<Snapshot> runAndCollect(
     int N, double dx, double Q, int num_steps,
-    int src_pos, Waveform wf, SourceMode mode,
+    int src_pos, const Waveform& wf, SourceMode mode,
     bool usePML, int pml_N, int snap_interval)
 {
     GridConfig gc;
     gc.num_cells = N;
     gc.dx = dx;
     gc.courant = Q;
-    // c_speed=1.0 по умолчанию (нормализованные единицы)
     Grid grid(gc);
 
     if (usePML) {
@@ -81,8 +72,7 @@ void plotSnapshots(const std::vector<double>& x,
     xlabel("x (cells)");
     ylabel("E_y");
     matplot::title(title_str);
-    matplot::legend()->location(legend::general_alignment::topleft);
-
+    matplot::legend()->location(legend::general_alignment::topright);
     show();
 }
 
@@ -98,9 +88,6 @@ int main() {
     std::vector<double> x(N);
     for (int i = 0; i < N; ++i) x[i] = i * dx;
 
-    // ================================================================
-    // 1. Гауссов импульс, soft source, БЕЗ PML — видны отражения
-    // ================================================================
     {
         std::cout << "[1] Gauss pulse, soft source, NO PML\n";
         auto wf = makeGaussianPulse(freq, 0.03, 5.0);
@@ -110,9 +97,6 @@ int main() {
             "Gauss pulse, soft source, NO PML (reflections visible)");
     }
 
-    // ================================================================
-    // 2. Гауссов импульс, soft source, С PML — поглощение на границах
-    // ================================================================
     {
         std::cout << "[2] Gauss pulse, soft source, WITH PML\n";
         auto wf = makeGaussianPulse(freq, 0.03, 5.0);
@@ -122,9 +106,6 @@ int main() {
             "Gauss pulse, soft source, WITH PML (absorbed at boundaries)");
     }
 
-    // ================================================================
-    // 3. CW-источник, soft source, С PML — стационарная волна
-    // ================================================================
     {
         std::cout << "[3] CW source, soft source, WITH PML\n";
         auto wf = makeCW(freq, 40.0, 3.0);
@@ -134,21 +115,18 @@ int main() {
             "CW source, soft source, WITH PML");
     }
 
-    // ================================================================
-    // 4. Сравнение soft vs current source — идентичны
-    // ================================================================
     {
-        std::cout << "[4] Comparison: soft vs current source\n";
+        std::cout << "[4] Comparison: soft vs hard source\n";
         int src_pos = pml_N + 30;
         int snap_time = 400;
         auto wf = makeGaussianPulse(freq, 0.03, 5.0);
 
         auto snaps_soft = runAndCollect(N, dx, Q, 500, src_pos, wf,
                                         SourceMode::Soft, true, pml_N, snap_time);
-        auto snaps_curr = runAndCollect(N, dx, Q, 500, src_pos, wf,
+        auto snaps_hard = runAndCollect(N, dx, Q, 500, src_pos, wf,
                                         SourceMode::Current, true, pml_N, snap_time);
 
-        if (!snaps_soft.empty() && !snaps_curr.empty()) {
+        if (!snaps_soft.empty() && !snaps_hard.empty()) {
             using namespace matplot;
 
             auto fig = figure(true);
@@ -159,7 +137,7 @@ int main() {
             p1->display_name("Soft source");
             p1->line_width(2.0);
 
-            auto p2 = plot(x, snaps_curr[0].Ey);
+            auto p2 = plot(x, snaps_hard[0].Ey);
             p2->display_name("Current source");
             p2->line_width(1.5);
             p2->line_style("--");
@@ -169,16 +147,9 @@ int main() {
             matplot::title("Soft vs Current source at step " +
                            std::to_string(snaps_soft[0].step));
             matplot::legend();
-
             show();
         }
     }
 
     std::cout << "\nTask 0 complete.\n";
-    std::cout << "\nВыводы:\n";
-    std::cout << "  1. Без PML — волна отражается от границ расчётной области\n";
-    std::cout << "  2. С PML — волна поглощается, отражений нет\n";
-    std::cout << "  3. CW-источник формирует стационарную синусоидальную волну\n";
-    std::cout << "  4. Soft source и current source дают идентичные результаты —\n";
-    std::cout << "     оба прозрачны для отражённых волн\n";
 }

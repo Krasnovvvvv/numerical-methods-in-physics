@@ -1,10 +1,3 @@
-/// Задача 3: Отражение от диэлектрической пластины (SiO₂)
-///
-/// Графики:
-/// 1. R(λ), T(λ) при L=200 нм: FDTD vs аналитика Фабри-Перо
-/// 2. R(λ) при разных L (100, 200, 400 нм)
-/// 3. R(λ) при разном времени моделирования (5000, 15000, 30000, 60000 шагов)
-
 #include "Labs/Special/Lab6/Base/Grid.h"
 #include "Labs/Special/Lab6/Base/Source.h"
 #include "Labs/Special/Lab6/Solver/FDTDSolver.h"
@@ -22,7 +15,6 @@
 
 using namespace fdtd;
 
-/// Аналитика Фабри-Перо для пластины с n, толщиной L, при длине волны lambda
 struct FPResult { double R, T; };
 
 FPResult fabryPerot(double n, double L, double lambda) {
@@ -35,7 +27,6 @@ FPResult fabryPerot(double n, double L, double lambda) {
     return {R, T};
 }
 
-/// Результат одного прогона
 struct SlabResult {
     std::vector<double> lam_nm;
     std::vector<double> R, T;
@@ -45,7 +36,7 @@ struct SlabResult {
 };
 
 SlabResult runSlab(double L_nm, int num_steps) {
-    const double c0        = 3e8;
+    const double c0         = 3e8;
     const double lambda_min = 300e-9;
     const double lambda_max = 900e-9;
     const double n_quartz   = 1.45;
@@ -61,8 +52,8 @@ SlabResult runSlab(double L_nm, int num_steps) {
     int src_pos      = pml_N + 60;
     int mon_ref      = pml_N + 120;
     int center       = pml_N + N_domain / 2;
-    int slab_start_i = center - (int)(L / (2.0 * dx));
-    int slab_end_i   = center + (int)(L / (2.0 * dx));
+    int slab_start_i = center - static_cast<int>(L / (2.0 * dx));
+    int slab_end_i   = center + static_cast<int>(L / (2.0 * dx));
     int mon_trans    = slab_end_i + 60;
 
     auto freqs = freqsForRange(lambda_min, lambda_max, 500, c0);
@@ -89,7 +80,6 @@ SlabResult runSlab(double L_nm, int num_steps) {
     auto norm = sim.runNormalization();
     auto rt   = sim.computeRT(norm, c0);
 
-    // Аналитика
     SlabResult res;
     res.L_nm  = L_nm;
     res.steps = num_steps;
@@ -111,9 +101,6 @@ SlabResult runSlab(double L_nm, int num_steps) {
 int main() {
     std::cout << "=== Task 3: Dielectric Slab ===\n\n";
 
-    // ================================================================
-    // График 1: R(λ), T(λ) для L=200 нм — FDTD vs Fabry-Perot
-    // ================================================================
     {
         std::cout << "[1] L=200 nm, 30000 steps: FDTD vs Fabry-Perot\n";
         auto r = runSlab(200.0, 30000);
@@ -141,9 +128,6 @@ int main() {
         show();
     }
 
-    // ================================================================
-    // График 2: R(λ) при разных L
-    // ================================================================
     {
         std::cout << "\n[2] Varying slab thickness\n";
         std::vector<double> thicknesses = {100.0, 200.0, 400.0};
@@ -169,12 +153,9 @@ int main() {
         show();
     }
 
-    // ================================================================
-    // График 3: Влияние времени моделирования на R(λ)
-    // ================================================================
     {
         std::cout << "\n[3] Varying simulation time\n";
-        std::vector<int> step_counts = {50, 500, 1000};
+        std::vector<int> step_counts = {1000, 2000, 5000};
 
         using namespace matplot;
         auto fig = figure(true);
@@ -189,7 +170,6 @@ int main() {
             p->line_width(1.5);
         }
 
-        // Добавим теорию для сравнения
         auto r_ref = runSlab(200.0, 60000);
         auto p = plot(r_ref.lam_nm, r_ref.R_th);
         p->display_name("Theory (Fabry-Perot)");
@@ -204,10 +184,4 @@ int main() {
     }
 
     std::cout << "\nTask 3 complete.\n";
-    std::cout << "\nВыводы:\n";
-    std::cout << "  - R(λ) и T(λ) демонстрируют осцилляции Фабри-Перо\n";
-    std::cout << "  - При увеличении L число осцилляций растёт\n";
-    std::cout << "  - Малое время моделирования недостаточно: учитываются не все\n";
-    std::cout << "    многократные отражения внутри пластины → спектр неточен\n";
-    std::cout << "  - При достаточном числе шагов FDTD сходится к аналитике\n";
 }
