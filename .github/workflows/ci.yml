@@ -7,11 +7,12 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-linux-macos:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +35,59 @@ jobs:
 
       - name: Configure CMake
         run: cmake -G Ninja -B build -S . -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: cmake --build build --parallel
+
+  build-windows-mingw:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      VCPKG_DEFAULT_TRIPLET: x64-mingw-dynamic
+      VCPKG_DEFAULT_HOST_TRIPLET: x64-mingw-dynamic
+      VCPKG_TARGET_TRIPLET: x64-mingw-dynamic
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkgconf
+            git
+            make
+
+      - name: Enable GitHub Actions Cache backend
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Install dependencies (vcpkg)
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: '**/vcpkg.json'
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+          runVcpkgInstall: true
+
+      - name: Configure CMake
+        run: >
+          cmake -G Ninja -B build -S .
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_C_COMPILER=gcc
+          -DCMAKE_CXX_COMPILER=g++
+          -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+          -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: Build
         run: cmake --build build --parallel
