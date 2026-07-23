@@ -22,9 +22,9 @@ struct SimulationConfig {
     InletType inletType = InletType::Uniform;
 
     int maxIterations = 1000;
-    double alphaU = 0.7;
-    double alphaV = 0.7;
-    double alphaP = 1.0;
+    double alphaU = 0.3;
+    double alphaV = 0.4;
+    double alphaP = 0.2;
 
     double tolMass = 1e-4;
     double tolU = 1e-4;

@@ -95,11 +95,13 @@ public:
         using namespace matplot;
 
         figure(true);
+        hold(on);
         imagesc(uMatrix(r));
         colorbar();
         title(prefix + " : u(x,y)");
         xlabel("i");
         ylabel("j");
+        show();
 
         figure(true);
         imagesc(vMatrix(r));
@@ -107,6 +109,7 @@ public:
         title(prefix + " : v(x,y)");
         xlabel("i");
         ylabel("j");
+        show();
 
         figure(true);
         imagesc(pressureMatrix(r));
@@ -114,6 +117,9 @@ public:
         title(prefix + " : p(x,y)");
         xlabel("i");
         ylabel("j");
+
+        show();
+        hold(off);
     }
 
     static void plotInletComparison(const FlowResult& uniformCase,
@@ -124,15 +130,19 @@ public:
         auto uth = theoreticalPoiseuille(profileCase);
 
         figure(true);
-        plot(u1, y1, "-o");
+        auto l1 = plot(u1, y1, "-o");
+        l1 -> line_width(2);
         hold(on);
-        plot(u2, y2, "-s");
-        plot(uth, y2, "--");
+        auto l2 = plot(u2, y2, "-s");
+        l2 -> line_width(2);
+        auto l3 = plot(uth, y2, "--");
+        l3 -> line_width(2);
         hold(off);
         xlabel("u");
         ylabel("y");
         title("Сравнение профиля скорости: uniform inlet vs parabolic inlet");
         legend({"uniform inlet", "parabolic inlet", "theoretical Poiseuille"});
+        show();
     }
 
     static void plotOutletStudy(const std::vector<double>& lengths,
@@ -146,7 +156,8 @@ public:
         }
         const auto uth = theoreticalPoiseuille(results.back());
         const auto y = yCenters(results.back());
-        plot(uth, y, "k--");
+        auto l1 = plot(uth, y, "k--");
+        l1 -> line_width(2);
         hold(off);
         xlabel("u");
         ylabel("y");
@@ -158,12 +169,14 @@ public:
         }
         labels.push_back("Poiseuille");
         legend(labels);
+        show();
 
         figure(true);
         hold(on);
         for (size_t k = 0; k < results.size(); ++k) {
             auto [x, p] = centerlinePressure(results[k]);
-            plot(x, p);
+            auto l = plot(x, p);
+            l -> line_width(2);
         }
         hold(off);
         xlabel("x");
@@ -172,20 +185,24 @@ public:
         legend({"L=" + std::to_string(lengths[0]),
                 "L=" + std::to_string(lengths[1]),
                 "L=" + std::to_string(lengths[2])});
+        show();
     }
 
     static void plotReStudy(const std::vector<double>& re,
                             const std::vector<double>& yPlus) {
         using namespace matplot;
         figure(true);
-        plot(re, yPlus, "-o");
+        auto l1 = plot(re, yPlus, "-o");
+        l1 -> line_width(2);
         hold(on);
-        plot(std::vector<double>{re.front(), re.back()}, std::vector<double>{11.63, 11.63}, "r--");
+        auto l2 = plot(std::vector<double>{re.front(), re.back()}, std::vector<double>{11.63, 11.63}, "r--");
         hold(off);
+        l2 -> line_width(2);
         xlabel("Re");
         ylabel("max y+");
         title("Рост y+ при увеличении Re");
         legend({"computed max y+", "y+=11.63"});
+        show();
     }
 };
 #endif //NUMERICAL_METHODS_IN_PHYSICS_PLOTTER_H

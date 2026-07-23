@@ -5,7 +5,6 @@
 int main() {
     try {
         ChannelStudy::runAll();
-        matplot::show();
         return 0;
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << std::endl;

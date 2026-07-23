@@ -29,7 +29,7 @@ public:
         auto profileCfg = base;
         profileCfg.inletType = InletType::Parabolic;
 
-        std::cout << "=== Base low-Re run: uniform inlet ===" << std::endl;
+        /*std::cout << "=== Base low-Re run: uniform inlet ===" << std::endl;
         auto uniformResult = solveCase(uniformCfg);
         std::cout << "iterations = " << uniformResult.iterations
                   << ", max y+ = " << uniformResult.maxYPlus << std::endl;
@@ -39,10 +39,11 @@ public:
         std::cout << "iterations = " << profileResult.iterations
                   << ", max y+ = " << profileResult.maxYPlus << std::endl;
 
-        Plotter::plotFieldOverview(uniformResult, "Low Re, uniform inlet");
+        //Plotter::plotFieldOverview(uniformResult, "Low Re, uniform inlet");
+        Plotter::plotFieldOverview(profileResult, "Low Re, profile inlet");
         Plotter::plotInletComparison(uniformResult, profileResult);
 
-        std::vector<double> lengths = {4.0, 8.0, 12.0};
+        std::vector<double> lengths = {0.5, 1.0, 4.0};
         std::vector<FlowResult> outletResults;
         std::cout << "=== Outlet study ===" << std::endl;
         for (double L : lengths) {
@@ -55,10 +56,10 @@ public:
                       << ", iterations = " << result.iterations
                       << ", max y+ = " << result.maxYPlus << std::endl;
         }
-        Plotter::plotOutletStudy(lengths, outletResults);
+        Plotter::plotOutletStudy(lengths, outletResults);*/
 
         std::cout << "=== Reynolds sweep ===" << std::endl;
-        std::vector<double> reValues = {10.0, 20.0, 40.0, 80.0};
+        std::vector<double> reValues = {40.0, 80.0, 200, 500, 1000};
         std::vector<double> yPlusValues;
         bool thresholdPrinted = false;
 
