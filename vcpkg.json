@@ -1,7 +1,7 @@
 {
   "name": "numerical-methods-in-physics",
   "version": "1.0.0",
-  "builtin-baseline": "a345bbdc68cdfda65603e24413b21afb28f110fb",
+  "builtin-baseline": "6617c815a4652e5df979b4caf1d51b9df08113b4",
   "dependencies": [
     "eigen3",
     "matplotplusplus"
